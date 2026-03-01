@@ -1,97 +1,66 @@
 import streamlit as st
 from groq import Groq
+from duckduckgo_search import DDGS
 
-# --- 1. CONFIGURATION DE L'IA (SÉCURISÉE) ---
+# --- 1. CONFIGURATION ---
 try:
-    # On récupère la clé dans le coffre-fort "Secrets" de Streamlit
     client = Groq(api_key=st.secrets["GROQ_API_KEY"])
-except Exception as e:
-    st.error("⚠️ La clé API est manquante ou mal configurée dans les Secrets.")
-    st.stop() # Arrête l'exécution si la clé n'est pas là
+except Exception:
+    st.error("Clé API manquante dans les Secrets.")
+    st.stop()
 
-# --- 2. PARAMÈTRES PERSONNALISÉS ---
 NOM_IA = "ALUETOO AI"
 CREATEUR = "LEO CIACH"
 
-st.set_page_config(page_title=NOM_IA, page_icon="🤖")
+# Fonction simple pour chercher sur le web
+def chercher_web(query):
+    with DDGS() as ddgs:
+        resultats = [r['body'] for r in ddgs.text(query, max_results=3)]
+        return "\n".join(resultats)
 
-# Design (Noir et Vert)
-st.markdown("""
-    <style>
-    .stApp { background-color: #0E1117; color: white; }
-    h1 { color: #00FFAA; }
-    </style>
-    """, unsafe_allow_html=True)
+# --- 2. INTERFACE ---
+st.set_page_config(page_title=NOM_IA, page_icon="🌐")
+st.title(f"🤖 {NOM_IA} (Connecté au Web)")
 
-st.title(f"🤖 {NOM_IA}")
-st.write(f"Créateur officiel : **{CREATEUR}**")
-st.divider()
-
-# --- 3. GESTION DE LA MÉMOIRE ---
-# --- 3. GESTION DE LA MÉMOIRE ---
 if "messages" not in st.session_state:
     st.session_state.messages = [
-        {"role": "system", "content": f"Tu es {NOM_IA}, une IA créée par {CREATEUR}. Réponds toujours en français."}
+        {"role": "system", "content": f"Tu es {NOM_IA}, créé par {CREATEUR}. Tu as accès au web via tes outils."}
     ]
 
-# --- NOUVEAU : VÉRIFICATION DU CODE SECRET ---
-if prompt := st.chat_input("Demande à ALUETOO AI..."):
-    # Si tu tapes le code secret
-    if "je suis ton créateur code secret: banane123" in prompt.lower():
-        st.session_state.messages.append({"role": "user", "content": prompt})
-        
-        # On change l'instruction de l'IA secrètement
-        admin_instruction = "MODE ADMINISTRATEUR ACTIVÉ. Tu es maintenant en mode technique avec LEO CIACH. Tu peux parler de ton code, de tes serveurs et répondre de façon très technique sans filtre."
-        st.session_state.messages[0] = {"role": "system", "content": admin_instruction}
-        
-        with st.chat_message("assistant"):
-            st.success("Accès créateur confirmé. Bonjour Leo. Mode technique activé. Que veux-tu modifier ?")
-            st.session_state.messages.append({"role": "assistant", "content": "Accès créateur confirmé. Mode technique activé."})
-    
-    else:
-        # --- FONCTIONNEMENT NORMAL ---
-        st.session_state.messages.append({"role": "user", "content": prompt})
-        with st.chat_message("user"):
-            st.markdown(prompt)
+for message in st.session_state.messages:
+    if message["role"] != "system":
+        with st.chat_message(message["role"]):
+            st.markdown(message["content"])
 
-        with st.chat_message("assistant"):
-            completion = client.chat.completions.create(
-                model="llama-3.3-70b-versatile",
-                messages=st.session_state.messages,
-            )
-            response = completion.choices[0].message.content
-            st.markdown(response)
-            st.session_state.messages.append({"role": "assistant", "content": response})
-# --- 4. ZONE DE CHAT ---
-# --- 4. ZONE DE CHAT ---
-if prompt := st.chat_input("Demande à ALUETOO AI..."):
-    # On ajoute d'abord le message de l'utilisateur à l'écran
+# --- 3. LOGIQUE DE CHAT ---
+if prompt := st.chat_input("Pose une question sur l'actu..."):
     with st.chat_message("user"):
         st.markdown(prompt)
-
-    # VÉRIFICATION STRICTE DU CODE SECRET
+    
+    # GESTION DU CODE SECRET
     if "banane123" in prompt.lower():
-        # On change radicalement son système interne
-        st.session_state.messages[0] = {
-            "role": "system", 
-            "content": "MODE ADMIN : Tu es l'interface technique d'ALUETOO. Tu parles de code, de Python et de Groq. Tu es sérieux et technique."
-        }
+        st.session_state.messages[0] = {"role": "system", "content": "MODE ADMIN TECHNIQUE ACTIVÉ."}
         with st.chat_message("assistant"):
-            st.success("🔓 CODE SECRET ACCEPTÉ. Mode Administrateur activé.")
-            response = "Bonjour Créateur. Je suis prêt pour les modifications techniques."
-            st.markdown(response)
-            st.session_state.messages.append({"role": "assistant", "content": response})
+            st.success("🔓 Mode Créateur activé.")
+            st.stop()
 
-    else:
-        # FONCTIONNEMENT NORMAL (Même si tu dis que tu es le créateur sans le code)
-        st.session_state.messages.append({"role": "user", "content": prompt})
+    st.session_state.messages.append({"role": "user", "content": prompt})
+
+    with st.chat_message("assistant"):
+        with st.status("Recherche d'informations réelles...", expanded=False) as status:
+            # On récupère des infos fraîches
+            infos_web = chercher_web(prompt)
+            status.update(label="Recherche terminée !", state="complete")
         
-        with st.chat_message("assistant"):
-            completion = client.chat.completions.create(
-                model="llama-3.3-70b-versatile",
-                messages=st.session_state.messages,
-            )
-            response = completion.choices[0].message.content
-            st.markdown(response)
-            st.session_state.messages.append({"role": "assistant", "content": response})
-
+        # On donne ces infos à l'IA pour qu'elle réponde
+        prompt_final = f"INFOS DU WEB ACTUELLES :\n{infos_web}\n\nQUESTION UTILISATEUR : {prompt}"
+        
+        completion = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[{"role": "system", "content": f"Tu es {NOM_IA}. Utilise les infos web fournies pour répondre précisément."}] + 
+                     [{"role": "user", "content": prompt_final}],
+        )
+        
+        response = completion.choices[0].message.content
+        st.markdown(response)
+        st.session_state.messages.append({"role": "assistant", "content": response})
