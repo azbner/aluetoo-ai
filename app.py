@@ -1,101 +1,104 @@
 import streamlit as st
 from groq import Groq
 import time
+from datetime import datetime
+import pytz
 
-# --- 1. CONFIGURATION (DOIT ETRE LA PREMIERE LIGNE) ---
-st.set_page_config(page_title="ALUETOO AI", layout="wide", initial_sidebar_state="expanded")
+# --- 1. CONFIGURATION ---
+client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
-# --- 2. CONNEXION API ---
-try:
-    client = Groq(api_key=st.secrets["GROQ_API_KEY"])
-except:
-    st.error("Erreur de configuration : Clé API manquante.")
-    st.stop()
-
-# --- 3. INITIALISATION DE LA MÉMOIRE ---
-if "messages" not in st.session_state:
-    st.session_state.messages = []
-if "historique_sessions" not in st.session_state:
-    st.session_state.historique_sessions = []
-
-# --- 4. BARRE LATÉRALE (SIDEBAR) ---
-with st.sidebar:
-    st.markdown("<h2 style='color: white;'>📜 HISTORIQUE</h2>", unsafe_allow_html=True)
-    
-    if st.button("✨ Nouvelle Discussion", use_container_width=True):
-        if st.session_state.messages:
-            # Sauvegarde la session actuelle avant d'effacer
-            st.session_state.historique_sessions.append(list(st.session_state.messages))
-        st.session_state.messages = []
-        st.rerun()
-    
-    st.divider()
-    
-    # Affichage des anciennes discussions
-    if st.session_state.historique_sessions:
-        for i, session in enumerate(st.session_state.historique_sessions):
-            if st.button(f"Discussion #{i+1}", key=f"session_{i}", use_container_width=True):
-                st.session_state.messages = list(session)
-                st.rerun()
-    else:
-        st.info("Aucune ancienne discussion.")
-
-    st.divider()
-    st.write("### ⚙️ RÉGLAGES")
-    active_fondu = st.toggle("Effet Ghost", value=True)
-    st.markdown("---")
-    st.markdown(f"**Propriétaire :** Léo Ciach")
-
-# --- 5. STYLE CSS (DESIGN 2026) ---
-st.markdown("""
+# --- 2. STYLE CSS (TOUT VISIBLE ET CENTRÉ) ---
+st.markdown(f"""
     <style>
-    .stApp { background-color: #0b0e14; }
-    .main .block-container { max-width: 850px !important; margin: auto !important; }
+    .stApp {{ background-color: #0b0e14; }}
     
-    @keyframes ghostFade {
-        0% { opacity: 0; filter: blur(8px); }
-        100% { opacity: 1; filter: blur(0px); }
-    }
+    .main .block-container {{
+        max-width: 750px !important;
+        margin: auto !important;
+        padding-top: 1rem !important;
+    }}
 
-    .chat-text { font-size: 20px !important; line-height: 1.6; color: #e6edf3; }
-    .word-fade { display: inline-block; animation: ghostFade 1s ease-out forwards; white-space: pre-wrap; }
+    /* Barre d'outils en haut (Boutons visibles) */
+    .tools-container {{
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: rgba(22, 27, 34, 0.9);
+        padding: 15px;
+        border-radius: 20px;
+        border: 1px solid #30363d;
+        margin-bottom: 20px;
+    }}
 
-    /* Bulles de chat stylisées */
-    div[data-testid="stChatMessage"] {
-        border-radius: 25px !important;
-        border: 1px solid #30363d !important;
-        margin-bottom: 10px !important;
-    }
+    @keyframes ghostFade {{
+        0% {{ opacity: 0; filter: blur(6px); transform: translateY(5px); }}
+        100% {{ opacity: 1; filter: blur(0px); transform: translateY(0px); }}
+    }}
 
-    /* En-tête */
-    .header-box { text-align: center; margin-bottom: 40px; }
-    .main-title { font-size: 55px; font-weight: 900; color: white; margin: 0; }
-    .gradient-text {
+    .chat-text {{ font-size: 20px !important; line-height: 1.6; color: #e6edf3; }}
+    .word-fade {{ display: inline-block; animation: ghostFade 1.2s ease-out forwards; white-space: pre-wrap; }}
+
+    .header-container {{ text-align: center; margin-bottom: 30px; }}
+    .main-title {{ font-size: 45px; font-weight: 800; color: white; }}
+    .full-gradient {{
+        font-weight: bold;
         background: linear-gradient(to right, #ff4b4b, #af40ff, #00d4ff);
         -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-        font-weight: bold; font-size: 26px;
-    }
+        font-size: 22px; display: block;
+    }}
 
-    div[data-testid="stChatInput"] { border-radius: 50px !important; }
-    header, footer { visibility: hidden; }
+    /* Barre Pilule */
+    div[data-testid="stChatInput"] {{
+        border-radius: 50px !important; border: 2px solid #30363d !important;
+        background-color: #161b22 !important; padding: 5px !important;
+    }}
+
+    header, footer {{ visibility: hidden; }}
     </style>
     """, unsafe_allow_html=True)
 
-# --- 6. INTERFACE PRINCIPALE ---
-st.markdown("""
-    <div class="header-box">
-        <h1 class="main-title">ALUETOO AI</h1>
-        <p class="gradient-text">Omniscience 2026 • Léo Ciach Edition</p>
+# --- 3. LOGIQUE HORAIRE ---
+tz = pytz.timezone('Europe/Brussels')
+maintenant = datetime.now(tz)
+format_heure = maintenant.strftime("%H:%M")
+salutation = "Bonjour" if 5 <= maintenant.hour < 18 else "Bonsoir"
+
+# --- 4. INTERFACE DES OUTILS (DIRECTEMENT SUR L'ÉCRAN) ---
+col1, col2, col3 = st.columns([1, 1, 1])
+
+with col1:
+    if st.button("🗑️ Effacer"):
+        st.session_state.messages = []
+        st.rerun()
+
+with col2:
+    active_fondu = st.toggle("Ghost", value=True)
+
+with col3:
+    # Analyse de fichier simplifiée
+    uploaded_file = st.file_uploader("📁 Fichier", type=["pdf", "txt"], label_visibility="collapsed")
+
+# --- 5. HEADER ---
+st.markdown(f"""
+    <div class="header-container">
+        <div class="main-title">🤖 ALUETOO AI</div>
+        <div class="full-gradient">
+            {salutation} !<br>
+            Intelligence 2026 (Mise à jour design le 1 mars) • {format_heure}
+        </div>
     </div>
     """, unsafe_allow_html=True)
 
-# Affichage des messages
+# --- 6. HISTORIQUE ET MÉMOIRE ---
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+
 for m in st.session_state.messages:
     with st.chat_message(m["role"]):
         st.markdown(f'<div class="chat-text">{m["content"]}</div>', unsafe_allow_html=True)
 
-# --- 7. LOGIQUE DE RÉPONSE ---
-if prompt := st.chat_input("Pose ta question à ton IA, Léo..."):
+# --- 7. CHAT ET RÉPONSE ---
+if prompt := st.chat_input("Écris ton message ici..."):
     with st.chat_message("user"):
         st.markdown(f'<div class="chat-text">{prompt}</div>', unsafe_allow_html=True)
     st.session_state.messages.append({"role": "user", "content": prompt})
@@ -103,9 +106,13 @@ if prompt := st.chat_input("Pose ta question à ton IA, Léo..."):
     with st.chat_message("assistant"):
         placeholder = st.empty()
         full_response = ""
+        display_html = '<div class="chat-text">'
         
-        # Le System Prompt Omniscient
-        instructions = "Tu es ALUETOO AI, une IA de 2026 omnisciente créée par Léo Ciach. Tu sais tout sur tout."
+        # Identity Lock
+        instructions = (
+            "Tu es ALUETOO AI, IA de 2026. "
+            "Ton créateur est Léo Ciach. Réponds fièrement que c'est lui."
+        )
 
         completion = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
@@ -113,7 +120,6 @@ if prompt := st.chat_input("Pose ta question à ton IA, Léo..."):
             stream=True 
         )
 
-        display_html = '<div class="chat-text">'
         for chunk in completion:
             if chunk.choices[0].delta.content:
                 text = chunk.choices[0].delta.content
@@ -121,9 +127,10 @@ if prompt := st.chat_input("Pose ta question à ton IA, Léo..."):
                 if active_fondu:
                     display_html += f'<span class="word-fade">{text}</span>'
                     placeholder.markdown(display_html + '</div>', unsafe_allow_html=True)
-                    time.sleep(0.04)
+                    time.sleep(0.05)
                 else:
                     placeholder.markdown(f'<div class="chat-text">{full_response}</div>', unsafe_allow_html=True)
         
         placeholder.markdown(f'<div class="chat-text">{full_response}</div>', unsafe_allow_html=True)
-        st.session_state.messages.append({"role": "assistant", "content": full_response})
+
+    st.session_state.messages.append({"role": "assistant", "content": full_response})
