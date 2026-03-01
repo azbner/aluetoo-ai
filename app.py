@@ -7,50 +7,38 @@ import pytz
 # --- 1. CONFIGURATION ---
 client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
-# --- 2. STYLE CSS (RETOURS DES INFOS ET LOOK ARC-EN-CIEL) ---
+# --- 2. STYLE CSS AMÉLIORÉ ---
 st.markdown("""
     <style>
-    .stApp {
-        background-color: #0b0e14;
-    }
+    .stApp { background-color: #0b0e14; }
 
-    /* Animation de fondu pour l'écriture */
+    /* L'animation de fondu : plus rapide et fluide */
     @keyframes ghostFade {
-        from { opacity: 0; filter: blur(4px); transform: translateY(5px); }
-        to { opacity: 1; filter: blur(0px); transform: translateY(0px); }
+        0% { opacity: 0; filter: blur(3px); transform: translateY(2px); }
+        100% { opacity: 1; filter: blur(0px); transform: translateY(0px); }
     }
 
-    /* LE CHAT : DÉGRADÉ ARC-EN-CIEL SUR TOUT LE BLOC */
+    /* Le style arc-en-ciel continu sur tout le bloc */
     .assistant-response {
         font-weight: bold;
         background: linear-gradient(to right, #ff4b4b, #af40ff, #00d4ff, #4bff80);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
-        display: inline-block;
-        font-size: 18px;
+        font-size: 19px;
         line-height: 1.6;
+        display: inline-block;
     }
 
+    /* La classe qui crée le fondu sur chaque nouveau mot */
     .word-fade {
-        display: inline;
-        animation: ghostFade 0.8s ease-out forwards;
+        display: inline-block;
+        animation: ghostFade 0.5s ease-out forwards;
+        white-space: pre-wrap;
     }
 
-    /* HEADER : ON FORCE LA VISIBILITÉ */
-    .header-container {
-        text-align: center;
-        margin-top: 20px;
-        margin-bottom: 40px;
-        display: block !important;
-    }
-    
-    .main-title {
-        font-size: 48px;
-        font-weight: 800;
-        color: white;
-        margin-bottom: 10px;
-    }
-
+    /* Header en dégradé */
+    .header-container { text-align: center; margin-bottom: 30px; }
+    .main-title { font-size: 48px; font-weight: 800; color: white; }
     .full-gradient {
         font-weight: bold;
         background: linear-gradient(to right, #ff4b4b, #af40ff, #00d4ff);
@@ -58,31 +46,18 @@ st.markdown("""
         -webkit-text-fill-color: transparent;
         font-size: 24px;
         display: block;
-        margin-top: 10px;
     }
 
-    /* BARRE DE TEXTE PILULE */
+    /* Barre de texte pilule */
     div[data-testid="stChatInput"] {
         border-radius: 50px !important;
         border: 2px solid #30363d !important;
         background-color: #161b22 !important;
-        padding: 8px !important;
     }
+    div[data-testid="stChatInput"] textarea { border-radius: 50px !important; padding-left: 25px !important; }
 
-    div[data-testid="stChatInput"] textarea {
-        border-radius: 50px !important;
-        padding-left: 25px !important;
-    }
-
-    /* Bulles de chat */
-    .stChatMessage {
-        border-radius: 30px !important;
-        border: 1px solid #1f2328;
-    }
-
-    /* Nettoyage interface */
-    header {visibility: hidden;}
-    footer {visibility: hidden;}
+    .stChatMessage { border-radius: 30px !important; border: 1px solid #1f2328; }
+    header, footer { visibility: hidden; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -90,13 +65,9 @@ st.markdown("""
 tz = pytz.timezone('Europe/Brussels')
 maintenant = datetime.now(tz)
 format_heure = maintenant.strftime("%H:%M")
+salutation = "Bonjour" if 5 <= maintenant.hour < 18 else "Bonsoir"
 
-if 5 <= maintenant.hour < 18:
-    salutation = "Bonjour"
-else:
-    salutation = "Bonsoir"
-
-# --- 4. AFFICHAGE DU HEADER (VÉRIFIÉ) ---
+# --- 4. HEADER ---
 st.markdown(f"""
     <div class="header-container">
         <div class="main-title">🤖 ALUETOO AI</div>
@@ -118,8 +89,8 @@ for m in st.session_state.messages:
         else:
             st.markdown(m["content"])
 
-# --- 6. RÉPONSE AVEC DÉGRADÉ ET FONDU ---
-if prompt := st.chat_input("Écris ton message ici..."):
+# --- 6. RÉPONSE AVEC FONDU RÉEL ---
+if prompt := st.chat_input("Écris ton message..."):
     with st.chat_message("user"):
         st.markdown(prompt)
     st.session_state.messages.append({"role": "user", "content": prompt})
@@ -127,26 +98,23 @@ if prompt := st.chat_input("Écris ton message ici..."):
     with st.chat_message("assistant"):
         placeholder = st.empty()
         full_response = ""
+        display_html = '<div class="assistant-response">'
         
-        ctx = f"Tu es ALUETOO AI. Date : {format_heure}. Tu es en 2026."
-
         completion = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
-            messages=[{"role": "system", "content": ctx}] + st.session_state.messages,
+            messages=[{"role": "system", "content": f"Tu es ALUETOO AI, IA de 2026."}] + st.session_state.messages,
             stream=True 
         )
 
-        display_html = ""
         for chunk in completion:
             if chunk.choices[0].delta.content:
                 text = chunk.choices[0].delta.content
                 full_response += text
-                # Chaque mot est entouré pour le fondu, le dégradé est géré par la classe parent
+                # Utilisation d'un span spécifique pour chaque fragment avec l'animation
                 display_html += f'<span class="word-fade">{text}</span>'
-                placeholder.markdown(f'<div class="assistant-response">{display_html}</div>', unsafe_allow_html=True)
-                time.sleep(0.05)
+                placeholder.markdown(display_html + '</div>', unsafe_allow_html=True)
+                time.sleep(0.04)
         
-        # Affichage final stable
         placeholder.markdown(f'<div class="assistant-response">{full_response}</div>', unsafe_allow_html=True)
 
     st.session_state.messages.append({"role": "assistant", "content": full_response})
