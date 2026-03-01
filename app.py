@@ -7,19 +7,16 @@ import pytz
 # --- 1. CONFIGURATION ---
 client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
-# --- 2. STYLE CSS (CENTRAGE, SWITCH À DROITE ET PILULE) ---
+# --- 2. STYLE CSS (CENTRAGE ET DESIGN 2026) ---
 st.markdown("""
     <style>
     .stApp { background-color: #0b0e14; }
-
-    /* Centrage de la page */
     .main .block-container {
         max-width: 750px !important;
         margin: auto !important;
         padding-top: 1rem !important;
     }
-
-    /* Positionnement du Switch en haut à droite */
+    /* Le Switch en haut à droite */
     .stToggle {
         position: fixed;
         top: 20px;
@@ -30,27 +27,12 @@ st.markdown("""
         border-radius: 15px;
         border: 1px solid #30363d;
     }
-
-    /* Animation Ghost */
     @keyframes ghostFade {
         0% { opacity: 0; filter: blur(6px); }
         100% { opacity: 1; filter: blur(0px); }
     }
-
-    /* Texte du chat stable à 20px */
-    .chat-text {
-        font-size: 20px !important;
-        line-height: 1.6;
-        color: #e6edf3;
-    }
-
-    .word-fade {
-        display: inline-block;
-        animation: ghostFade 1.2s ease-out forwards;
-        white-space: pre-wrap;
-    }
-
-    /* Header centré */
+    .chat-text { font-size: 20px !important; line-height: 1.6; color: #e6edf3; }
+    .word-fade { display: inline-block; animation: ghostFade 1.2s ease-out forwards; white-space: pre-wrap; }
     .header-container { text-align: center; margin-bottom: 40px; }
     .main-title { font-size: 45px; font-weight: 800; color: white; }
     .full-gradient {
@@ -61,28 +43,13 @@ st.markdown("""
         font-size: 22px;
         display: block;
     }
-
-    /* Barre Pilule */
     div[data-testid="stChatInput"] {
         border-radius: 50px !important; 
         border: 2px solid #30363d !important;
         background-color: #161b22 !important;
-        padding: 5px !important;
     }
-    
-    div[data-testid="stChatInput"] textarea {
-        border-radius: 50px !important;
-        padding-left: 20px !important;
-        font-size: 18px !important;
-    }
-
-    /* Style des bulles de chat */
-    .stChatMessage { 
-        border-radius: 25px !important; 
-        border: 1px solid #1f2328;
-        margin-bottom: 10px;
-    }
-
+    div[data-testid="stChatInput"] textarea { border-radius: 50px !important; padding-left: 20px !important; }
+    .stChatMessage { border-radius: 25px !important; border: 1px solid #1f2328; }
     header, footer { visibility: hidden; }
     </style>
     """, unsafe_allow_html=True)
@@ -93,7 +60,7 @@ maintenant = datetime.now(tz)
 format_heure = maintenant.strftime("%H:%M")
 salutation = "Bonjour" if 5 <= maintenant.hour < 18 else "Bonsoir"
 
-# --- 4. LE SWITCH (Visible sur l'écran) ---
+# --- 4. LE SWITCH ---
 active_fondu = st.toggle("Effet Ghost", value=True)
 
 # --- 5. HEADER ---
@@ -115,7 +82,7 @@ for m in st.session_state.messages:
     with st.chat_message(m["role"]):
         st.markdown(f'<div class="chat-text">{m["content"]}</div>', unsafe_allow_html=True)
 
-# --- 7. RÉPONSE ---
+# --- 7. RÉPONSE (AVEC IDENTITÉ MISE À JOUR) ---
 if prompt := st.chat_input("Écris ton message ici..."):
     with st.chat_message("user"):
         st.markdown(f'<div class="chat-text">{prompt}</div>', unsafe_allow_html=True)
@@ -126,9 +93,16 @@ if prompt := st.chat_input("Écris ton message ici..."):
         full_response = ""
         display_html = '<div class="chat-text">'
         
+        # --- ICI ON DIT À L'IA QUI L'A CRÉÉE ---
+        instructions = (
+            "Tu es ALUETOO AI, une intelligence artificielle ultra-moderne de l'année 2026. "
+            "Ton créateur et développeur est Léo Ciach. "  # <--- METS TON NOM ICI
+            "Si on te demande qui t'a créé, réponds avec fierté que c'est Léo Ciach."
+        )
+
         completion = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
-            messages=[{"role": "system", "content": "Tu es ALUETOO AI."}] + st.session_state.messages,
+            messages=[{"role": "system", "content": instructions}] + st.session_state.messages,
             stream=True 
         )
 
@@ -136,7 +110,6 @@ if prompt := st.chat_input("Écris ton message ici..."):
             if chunk.choices[0].delta.content:
                 text = chunk.choices[0].delta.content
                 full_response += text
-                
                 if active_fondu:
                     display_html += f'<span class="word-fade">{text}</span>'
                     placeholder.markdown(display_html + '</div>', unsafe_allow_html=True)
