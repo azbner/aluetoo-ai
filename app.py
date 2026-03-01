@@ -7,26 +7,33 @@ import pytz
 # --- 1. CONFIGURATION ---
 client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
-# --- 2. STYLE CSS AVANCÉ (ARC-EN-CIEL & FONDU) ---
+# --- 2. STYLE CSS (DÉGRADÉ GÉANT ET FONDU) ---
 st.markdown("""
     <style>
     .stApp {
         background-color: #0b0e14;
     }
 
-    /* ANIMATION DE FONDU + DÉGRADÉ POUR LE CHAT */
+    /* Animation de fondu pour l'écriture */
     @keyframes ghostFade {
-        from { opacity: 0; filter: blur(5px); transform: translateY(5px); }
+        from { opacity: 0; filter: blur(4px); transform: translateY(5px); }
         to { opacity: 1; filter: blur(0px); transform: translateY(0px); }
     }
 
-    .rainbow-text {
+    /* LE CHAT : DÉGRADÉ ARC-EN-CIEL CONTINU */
+    .assistant-response {
         font-weight: bold;
-        background: linear-gradient(to right, #ff4b4b, #af40ff, #00d4ff, #4bff80);
+        background: linear-gradient(to right, #ff4b4b, #af40ff, #00d4ff, #4bff80, #ff4b4b);
+        background-size: 200% auto;
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         display: inline;
-        animation: ghostFade 1s ease-out forwards;
+        font-size: 18px;
+    }
+
+    .word-fade {
+        display: inline;
+        animation: ghostFade 0.8s ease-out forwards;
     }
 
     /* HEADER EN DÉGRADÉ */
@@ -43,7 +50,7 @@ st.markdown("""
 
     .full-gradient {
         font-weight: bold;
-        background: -webkit-linear-gradient(left, #ff4b4b, #af40ff, #00d4ff);
+        background: linear-gradient(left, #ff4b4b, #af40ff, #00d4ff);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         font-size: 26px;
@@ -51,7 +58,7 @@ st.markdown("""
         line-height: 1.4;
     }
 
-    /* BARRE DE TEXTE PILULE ULTIME */
+    /* BARRE DE TEXTE PILULE */
     div[data-testid="stChatInput"] {
         border-radius: 50px !important;
         border: 2px solid #30363d !important;
@@ -96,15 +103,18 @@ st.markdown(f"""
     </div>
     """, unsafe_allow_html=True)
 
-# --- 5. MESSAGES ---
+# --- 5. GESTION DES MESSAGES ---
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
 for m in st.session_state.messages:
     with st.chat_message(m["role"]):
-        st.markdown(m["content"])
+        if m["role"] == "assistant":
+            st.markdown(f'<div class="assistant-response">{m["content"]}</div>', unsafe_allow_html=True)
+        else:
+            st.markdown(m["content"])
 
-# --- 6. RÉPONSE ARC-EN-CIEL ---
+# --- 6. RÉPONSE AVEC DÉGRADÉ ÉTENDU ---
 if prompt := st.chat_input("Pose ta question..."):
     with st.chat_message("user"):
         st.markdown(prompt)
@@ -122,17 +132,16 @@ if prompt := st.chat_input("Pose ta question..."):
             stream=True 
         )
 
-        display_html = ""
+        display_html = '<div class="assistant-response">'
         for chunk in completion:
             if chunk.choices[0].delta.content:
                 text = chunk.choices[0].delta.content
                 full_response += text
-                # Chaque bout de texte est en dégradé arc-en-ciel + fondu
-                display_html += f'<span class="rainbow-text">{text}</span>'
-                placeholder.markdown(display_html, unsafe_allow_html=True)
+                # Chaque mot est enveloppé pour le fondu, mais le dégradé est sur le conteneur parent
+                display_html += f'<span class="word-fade">{text}</span>'
+                placeholder.markdown(display_html + '</div>', unsafe_allow_html=True)
                 time.sleep(0.05)
         
-        # On garde le texte final propre
-        placeholder.markdown(f'<span class="rainbow-text">{full_response}</span>', unsafe_allow_html=True)
+        placeholder.markdown(f'<div class="assistant-response">{full_response}</div>', unsafe_allow_html=True)
 
     st.session_state.messages.append({"role": "assistant", "content": full_response})
