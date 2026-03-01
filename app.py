@@ -8,28 +8,38 @@ import pytz
 client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
 # --- 2. BARRE LATÉRALE (SWITCH) ---
+# On place le switch avant le CSS pour s'assurer qu'il est chargé
 with st.sidebar:
     st.title("⚙️ Réglages")
-    # Le switch pour activer/désactiver le fondu
     active_fondu = st.toggle("Activer l'effet de fondu lent", value=True)
-    st.info("Désactivez pour une écriture instantanée si besoin.")
+    st.divider()
+    st.info("Design ALUETOO AI v2026")
 
-# --- 3. STYLE CSS (STABILITÉ ET PILULE) ---
+# --- 3. STYLE CSS (CENTRAGE ET STABILITÉ) ---
 st.markdown(f"""
     <style>
+    /* Fond général */
     .stApp {{ background-color: #0b0e14; }}
 
-    /* Animation Ghost stable */
+    /* Centrage du contenu principal */
+    .main .block-container {{
+        max-width: 800px;
+        padding-top: 2rem;
+        margin: auto;
+    }}
+
+    /* Animation Ghost */
     @keyframes ghostFade {{
-        0% {{ opacity: 0; filter: blur(6px); transform: scale(1.05); }}
+        0% {{ opacity: 0; filter: blur(6px); transform: scale(1.02); }}
         100% {{ opacity: 1; filter: blur(0px); transform: scale(1); }}
     }}
 
-    /* Taille de police fixée à 20px pour éviter le changement de taille */
+    /* Texte du chat agrandi (20px) et stable */
     .chat-text {{
         font-size: 20px !important;
         line-height: 1.6;
         color: #e6edf3;
+        font-family: 'Source Sans Pro', sans-serif;
     }}
 
     .word-fade {{
@@ -39,8 +49,8 @@ st.markdown(f"""
     }}
 
     /* HEADER DÉGRADÉ */
-    .header-container {{ text-align: center; margin-bottom: 35px; }}
-    .main-title {{ font-size: 48px; font-weight: 800; color: white; }}
+    .header-container {{ text-align: center; margin-bottom: 40px; }}
+    .main-title {{ font-size: 48px; font-weight: 800; color: white; margin-bottom: 0px; }}
     .full-gradient {{
         font-weight: bold;
         background: linear-gradient(to right, #ff4b4b, #af40ff, #00d4ff);
@@ -56,14 +66,24 @@ st.markdown(f"""
         border: 2px solid #30363d !important;
         background-color: #161b22 !important;
         padding: 8px !important;
+        max-width: 800px;
+        margin: auto;
     }}
+    
     div[data-testid="stChatInput"] textarea {{
         border-radius: 50px !important;
         padding-left: 20px !important;
         font-size: 18px !important;
+        background-color: transparent !important;
     }}
 
-    .stChatMessage {{ border-radius: 30px !important; border: 1px solid #1f2328; }}
+    /* Bulles de chat centrées et propres */
+    .stChatMessage {{ 
+        border-radius: 30px !important; 
+        border: 1px solid #1f2328;
+        margin-bottom: 15px !important;
+    }}
+
     header, footer {{ visibility: hidden; }}
     </style>
     """, unsafe_allow_html=True)
@@ -91,10 +111,9 @@ if "messages" not in st.session_state:
 
 for m in st.session_state.messages:
     with st.chat_message(m["role"]):
-        # On applique la taille 20px même aux anciens messages
         st.markdown(f'<div class="chat-text">{m["content"]}</div>', unsafe_allow_html=True)
 
-# --- 7. RÉPONSE AVEC OPTION FONDU ---
+# --- 7. RÉPONSE ---
 if prompt := st.chat_input("Écris ton message ici..."):
     with st.chat_message("user"):
         st.markdown(f'<div class="chat-text">{prompt}</div>', unsafe_allow_html=True)
@@ -117,15 +136,12 @@ if prompt := st.chat_input("Écris ton message ici..."):
                 full_response += text
                 
                 if active_fondu:
-                    # Effet Ghost activé
                     display_html += f'<span class="word-fade">{text}</span>'
                     placeholder.markdown(display_html + '</div>', unsafe_allow_html=True)
                     time.sleep(0.06)
                 else:
-                    # Écriture normale sans fondu
                     placeholder.markdown(f'<div class="chat-text">{full_response}</div>', unsafe_allow_html=True)
         
-        # Affichage final (on force la div chat-text pour garder la taille)
         placeholder.markdown(f'<div class="chat-text">{full_response}</div>', unsafe_allow_html=True)
 
     st.session_state.messages.append({"role": "assistant", "content": full_response})
