@@ -4,28 +4,32 @@ from duckduckgo_search import DDGS
 from datetime import datetime
 import pytz
 
-# --- 1. CONFIGURATION ---
+# --- CONFIGURATION ---
 client = Groq(api_key=st.secrets["GROQ_API_KEY"])
-NOM_IA = "ALUETOO AI"
-CREATEUR = "LEO CIACH"
 
 def obtenir_heure_belge():
-    tz = pytz.timezone('Europe/Brussels')
-    return datetime.now(tz).strftime("%A %d %B %Y, %H:%M:%S")
+    try:
+        tz = pytz.timezone('Europe/Brussels')
+        return datetime.now(tz).strftime("%A %d %B %Y, %H:%M")
+    except:
+        return "Heure non disponible"
 
 def chercher_web(query):
     try:
         with DDGS() as ddgs:
-            results = ddgs.text(query, max_results=3)
-            return "\n".join([r['body'] for r in results])
-    except:
-        return "Pas d'infos web trouvées."
+            results = list(ddgs.text(query, max_results=3))
+            if not results:
+                return "Aucun résultat trouvé sur le web."
+            return "\n".join([f"SOURCE: {r['body']}" for r in results])
+    except Exception as e:
+        return f"Erreur de recherche : {str(e)}"
 
-# --- 2. INTERFACE ---
-st.set_page_config(page_title=NOM_IA, page_icon="🤖")
-st.title(f"🤖 {NOM_IA}")
-heure_actuelle = obtenir_heure_belge()
-st.sidebar.write(f"⏰ Heure en Belgique : {heure_actuelle}")
+# --- INTERFACE ---
+st.set_page_config(page_title="ALUETOO AI", page_icon="🤖")
+st.title("🤖 ALUETOO AI")
+
+heure = obtenir_heure_belge()
+st.sidebar.write(f"📅 Date : {heure}")
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
@@ -34,29 +38,36 @@ for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
 
-# --- 3. LOGIQUE DU CHAT ---
-if prompt := st.chat_input("Pose ta question..."):
+# --- CHAT ---
+if prompt := st.chat_input("Demande-moi n'importe quoi sur l'actu..."):
     st.chat_message("user").markdown(prompt)
     st.session_state.messages.append({"role": "user", "content": prompt})
 
     with st.chat_message("assistant"):
-        # On cherche sur le web AVANT de répondre
-        infos_recentes = chercher_web(prompt)
+        # 1. On cherche
+        with st.spinner("Je regarde sur Internet..."):
+            infos_du_web = chercher_web(prompt)
         
-        # ON FORCE L'IA À LIRE CES INFOS
-        instruction_forcee = (
-            f"Tu es {NOM_IA}, l'IA de {CREATEUR}. "
-            f"Oublie ta limite de 2023. Nous sommes le {heure_actuelle}. "
-            f"Voici les infos actuelles du web : {infos_recentes}. "
-            "Réponds à l'utilisateur en utilisant ces données."
+        # 2. On prépare l'instruction (très autoritaire)
+        system_prompt = (
+            f"Tu es ALUETOO AI. Nous sommes le {heure}. "
+            "Tes connaissances internes s'arrêtent en 2023, MAIS je te donne accès au Web ci-dessous. "
+            "TU DOIS IGNORER TA LIMITE DE 2023. "
+            "Si les infos ci-dessous parlent de 2025 ou 2026, utilise-les ! "
+            f"\n\nVOICI LES INFOS RÉELLES DU WEB :\n{infos_du_web}"
         )
 
+        # 3. Appel API
         completion = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
-            messages=[{"role": "system", "content": instruction_forcee}] + st.session_state.messages,
-            temperature=0.1 # Plus précis, moins de blabla sur 2023
+            messages=[{"role": "system", "content": system_prompt}] + st.session_state.messages,
+            temperature=0
         )
         
         reponse = completion.choices[0].message.content
         st.markdown(reponse)
         st.session_state.messages.append({"role": "assistant", "content": reponse})
+
+        # --- DEBUG : Affiche ce que l'IA a trouvé (pour toi vérifier) ---
+        with st.expander("Voir les sources brutes trouvées"):
+            st.write(infos_du_web)
