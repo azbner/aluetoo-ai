@@ -7,32 +7,26 @@ import pytz
 # --- 1. CONFIGURATION ---
 client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
-# --- 2. STYLE CSS (FONDU LENT & HEADER DÉGRADÉ) ---
+# --- 2. STYLE CSS (FORCE LA PILULE ET LE FONDU) ---
 st.markdown("""
     <style>
     .stApp { background-color: #0b0e14; }
 
-    /* Animation de fondu lent (Ghost Fade) */
+    /* Animation de fondu lent */
     @keyframes ghostFade {
         0% { opacity: 0; filter: blur(6px); transform: translateY(4px); }
         100% { opacity: 1; filter: blur(0px); transform: translateY(0px); }
     }
 
-    /* Style du texte de l'IA (Blanc avec fondu, sans dégradé) */
-    .assistant-text {
-        color: #e6edf3;
-        font-size: 18px;
-        line-height: 1.6;
-        display: inline-block;
-    }
-
     .word-fade {
         display: inline-block;
-        animation: ghostFade 1.2s ease-out forwards; /* Fondu plus lent */
+        animation: ghostFade 1.2s ease-out forwards;
         white-space: pre-wrap;
+        color: #e6edf3;
+        font-size: 18px;
     }
 
-    /* HEADER : ON GARDE LE DÉGRADÉ ICI */
+    /* HEADER DÉGRADÉ */
     .header-container { text-align: center; margin-bottom: 35px; }
     .main-title { font-size: 48px; font-weight: 800; color: white; }
     .full-gradient {
@@ -44,13 +38,28 @@ st.markdown("""
         display: block;
     }
 
-    /* BARRE DE TEXTE PILULE */
+    /* --- FORCE LA BARRE EN FORME DE PILULE --- */
+    /* On cible le conteneur global de l'input */
     div[data-testid="stChatInput"] {
-        border-radius: 50px !important;
+        border-radius: 50px !important; 
         border: 2px solid #30363d !important;
         background-color: #161b22 !important;
+        padding: 8px !important;
+        margin-bottom: 10px !important;
     }
-    div[data-testid="stChatInput"] textarea { border-radius: 50px !important; padding-left: 25px !important; }
+
+    /* On cible la zone de texte interne */
+    div[data-testid="stChatInput"] textarea {
+        border-radius: 50px !important;
+        padding-left: 20px !important;
+        background-color: transparent !important;
+        border: none !important;
+    }
+
+    /* On arrondit aussi le bouton d'envoi */
+    div[data-testid="stChatInput"] button {
+        border-radius: 50% !important;
+    }
 
     .stChatMessage { border-radius: 30px !important; border: 1px solid #1f2328; }
     header, footer { visibility: hidden; }
@@ -82,8 +91,8 @@ for m in st.session_state.messages:
     with st.chat_message(m["role"]):
         st.markdown(m["content"])
 
-# --- 6. RÉPONSE AVEC FONDU LENT SANS DÉGRADÉ ---
-if prompt := st.chat_input("Écris ton message..."):
+# --- 6. RÉPONSE AVEC FONDU LENT ---
+if prompt := st.chat_input("Écris ton message ici..."):
     with st.chat_message("user"):
         st.markdown(prompt)
     st.session_state.messages.append({"role": "user", "content": prompt})
@@ -91,7 +100,7 @@ if prompt := st.chat_input("Écris ton message..."):
     with st.chat_message("assistant"):
         placeholder = st.empty()
         full_response = ""
-        display_html = '<div class="assistant-text">'
+        display_html = '<div>'
         
         completion = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
@@ -103,10 +112,9 @@ if prompt := st.chat_input("Écris ton message..."):
             if chunk.choices[0].delta.content:
                 text = chunk.choices[0].delta.content
                 full_response += text
-                # Animation de fondu sur chaque nouveau segment
                 display_html += f'<span class="word-fade">{text}</span>'
                 placeholder.markdown(display_html + '</div>', unsafe_allow_html=True)
-                time.sleep(0.06) # Vitesse réglée pour apprécier le fondu
+                time.sleep(0.06)
         
         placeholder.markdown(full_response)
 
