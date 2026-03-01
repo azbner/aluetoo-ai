@@ -4,42 +4,44 @@ import time
 from datetime import datetime
 import pytz
 
-# --- 1. CONFIGURATION ---
+# --- 1. CONFIGURATION GROQ ---
 client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
-# --- 2. GESTION DE L'HISTORIQUE GLOBAL ---
-if "chat_history_list" not in st.session_state:
-    st.session_state.chat_history_list = [] # Liste des anciennes discussions
+# --- 2. INITIALISATION DE LA MÉMOIRE (HISTORIQUE) ---
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+if "chat_sessions" not in st.session_state:
+    st.session_state.chat_sessions = []
 
-# --- 3. BARRE LATÉRALE (HISTORIQUE ET RÉGLAGES) ---
+# --- 3. BARRE LATÉRALE (SIDEBAR) ---
+# Si tu ne la vois pas, clique sur la petite flèche ">" en haut à gauche de ton écran
 with st.sidebar:
     st.title("📜 Historique")
-    if st.session_state.chat_history_list:
-        for i, chat in enumerate(st.session_state.chat_history_list):
-            st.button(f"Discussion {i+1} - {chat['date']}", key=f"old_chat_{i}")
-    else:
-        st.write("Aucun historique pour le moment.")
+    st.write("Sessions de Léo Ciach")
+    
+    if st.button("➕ Nouvelle Discussion"):
+        if st.session_state.messages:
+            st.session_state.chat_sessions.append(st.session_state.messages)
+        st.session_state.messages = []
+        st.rerun()
     
     st.divider()
     st.title("⚙️ Réglages")
-    active_fondu = st.toggle("Effet Ghost (Fondu)", value=True)
+    active_fondu = st.toggle("Effet Ghost", value=True)
     
-    if st.button("🗑️ Nouvelle Discussion"):
-        # Avant d'effacer, on sauvegarde dans l'historique à gauche
-        if st.session_state.messages:
-            now = datetime.now(pytz.timezone('Europe/Brussels')).strftime("%H:%M")
-            st.session_state.chat_history_list.append({"date": now, "msgs": st.session_state.messages})
-        st.session_state.messages = []
-        st.rerun()
+    st.divider()
+    st.info("Créateur : Léo Ciach\nVersion : Intelligence 2026")
 
-# --- 4. STYLE CSS (DESIGN 2026 ET ALIGNEMENT) ---
+# --- 4. STYLE CSS (CENTRAGE ET DESIGN) ---
 st.markdown(f"""
     <style>
     .stApp {{ background-color: #0b0e14; }}
     
+    /* Force le centrage du chat */
     .main .block-container {{
         max-width: 800px !important;
         margin: auto !important;
+        display: block !important;
     }}
 
     /* Animation Ghost */
@@ -51,18 +53,13 @@ st.markdown(f"""
     .chat-text {{ font-size: 20px !important; line-height: 1.6; color: #e6edf3; }}
     .word-fade {{ display: inline-block; animation: ghostFade 1.2s ease-out forwards; white-space: pre-wrap; }}
 
-    /* Alignement des bulles */
+    /* Bulles : Assistant à gauche, User à droite */
     div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarUser"]) {{
         flex-direction: row-reverse !important;
-        background-color: rgba(48, 54, 61, 0.2);
-        border-radius: 25px 25px 5px 25px !important;
+        background-color: rgba(48, 54, 61, 0.2) !important;
     }}
 
-    div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarAssistant"]) {{
-        background-color: rgba(22, 27, 34, 0.5);
-        border-radius: 25px 25px 25px 5px !important;
-    }}
-
+    /* Header */
     .header-container {{ text-align: center; margin-bottom: 30px; }}
     .main-title {{ font-size: 45px; font-weight: 800; color: white; }}
     .full-gradient {{
@@ -99,15 +96,12 @@ st.markdown(f"""
     </div>
     """, unsafe_allow_html=True)
 
-# --- 7. CHAT EN COURS ---
-if "messages" not in st.session_state:
-    st.session_state.messages = []
-
+# --- 7. AFFICHAGE DES MESSAGES ---
 for m in st.session_state.messages:
     with st.chat_message(m["role"]):
         st.markdown(f'<div class="chat-text">{m["content"]}</div>', unsafe_allow_html=True)
 
-# --- 8. RÉPONSE ---
+# --- 8. ENTREE CHAT ET RÉPONSE ---
 if prompt := st.chat_input("Écris ton message ici..."):
     with st.chat_message("user"):
         st.markdown(f'<div class="chat-text">{prompt}</div>', unsafe_allow_html=True)
@@ -118,7 +112,7 @@ if prompt := st.chat_input("Écris ton message ici..."):
         full_response = ""
         display_html = '<div class="chat-text">'
         
-        instructions = "Tu es ALUETOO AI. Ton créateur est Léo Ciach. Nous sommes le 1er mars 2026."
+        instructions = "Tu es ALUETOO AI. Ton créateur est Léo Ciach. Tu es une IA de 2026."
 
         completion = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
