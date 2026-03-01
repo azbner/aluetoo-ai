@@ -5,7 +5,7 @@ from groq import Groq
 # Remplace par ta clé API Groq (celle qui commence par gsk_...)
 try:
    import streamlit as st # Assure-toi que cette ligne est bien en haut
-client = Groq(api_key=st.secrets["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"])
+client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 except Exception as e:
     st.error(f"Erreur de configuration de la clé : {e}")
 
@@ -78,3 +78,4 @@ with st.sidebar:
         st.session_state.messages = [st.session_state.messages[0]]
         st.rerun()
     st.info(f"Version : 2.0 (Stable)")
+
