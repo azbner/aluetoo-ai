@@ -4,7 +4,8 @@ from groq import Groq
 # --- 1. CONFIGURATION DE L'IA ---
 # Remplace par ta clé API Groq (celle qui commence par gsk_...)
 try:
-    client = Groq(api_key="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")
+   import streamlit as st # Assure-toi que cette ligne est bien en haut
+client = Groq(api_key=st.secrets["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"])
 except Exception as e:
     st.error(f"Erreur de configuration de la clé : {e}")
 
