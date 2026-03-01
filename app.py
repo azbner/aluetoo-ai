@@ -1,81 +1,56 @@
 import streamlit as st
 from groq import Groq
 
-# --- 1. CONFIGURATION DE L'IA ---
-# Remplace par ta clé API Groq (celle qui commence par gsk_...)
+# --- 1. CONFIGURATION DE L'IA (SÉCURISÉE) ---
 try:
-   import streamlit as st # Assure-toi que cette ligne est bien en haut
-client = Groq(api_key=st.secrets["GROQ_API_KEY"])
+    # On récupère la clé dans le coffre-fort "Secrets" de Streamlit
+    client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 except Exception as e:
-    st.error(f"Erreur de configuration de la clé : {e}")
+    st.error("⚠️ La clé API est manquante ou mal configurée dans les Secrets.")
+    st.stop() # Arrête l'exécution si la clé n'est pas là
 
 # --- 2. PARAMÈTRES PERSONNALISÉS ---
 NOM_IA = "ALUETOO AI"
 CREATEUR = "LEO CIACH"
 
-st.set_page_config(page_title=NOM_IA, page_icon="🤖", layout="centered")
+st.set_page_config(page_title=NOM_IA, page_icon="🤖")
 
-# Design stylé (Sombre et Vert)
+# Design (Noir et Vert)
 st.markdown("""
     <style>
     .stApp { background-color: #0E1117; color: white; }
-    .stTextInput>div>div>input { color: white; }
-    h1 { color: #00FFAA; font-family: 'Courier New', Courier, monospace; }
+    h1 { color: #00FFAA; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 3. INTERFACE DU SITE ---
 st.title(f"🤖 {NOM_IA}")
-st.write(f"### Bienvenue dans mon AI extremement rapide")
-st.caption(f"Propulsé par ALUETOO_1.1 | Créé par **{CREATEUR}**")
+st.write(f"Créateur officiel : **{CREATEUR}**")
 st.divider()
 
-# --- 4. GESTION DE LA MÉMOIRE ---
+# --- 3. GESTION DE LA MÉMOIRE ---
 if "messages" not in st.session_state:
     st.session_state.messages = [
-        {
-            "role": "system", 
-            "content": f"Tu es {NOM_IA}, une IA surpuissante créée par {CREATEUR}. Tu es polie, serviable et tu réponds toujours en français."
-        }
+        {"role": "system", "content": f"Tu es {NOM_IA}, une IA créée par {CREATEUR}. Réponds toujours en français."}
     ]
 
-# Affichage de la discussion
+# Affichage des messages passés
 for message in st.session_state.messages:
     if message["role"] != "system":
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
 
-# --- 5. ZONE DE CHAT (L'ACTION) ---
-if prompt := st.chat_input("Message ALUETOO AI..."):
-    # Ajouter le message de l'utilisateur
+# --- 4. ZONE DE CHAT ---
+if prompt := st.chat_input("Demande à ALUETOO AI..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
 
-    # Réponse de l'IA (Correction du modèle ici)
     with st.chat_message("assistant"):
-        with st.spinner("ALUETOO réfléchit..."):
-            try:
-                # Utilisation du modèle 3.3 qui fonctionne (70b-versatile)
-                completion = client.chat.completions.create(
-                    model="llama-3.3-70b-versatile",
-                    messages=st.session_state.messages,
-                )
-                
-                response = completion.choices[0].message.content
-                st.markdown(response)
-                
-                # Sauvegarde la réponse dans l'historique
-                st.session_state.messages.append({"role": "assistant", "content": response})
-                
-            except Exception as e:
-                st.error(f"Oups ! Une erreur est survenue : {e}")
-
-# --- 6. BARRE LATÉRALE ---
-with st.sidebar:
-    st.header("Paramètres")
-    if st.button("🗑️ Effacer la discussion"):
-        st.session_state.messages = [st.session_state.messages[0]]
-        st.rerun()
-    st.info(f"Version : 2.0 (Stable)")
-
+        # Utilisation du modèle llama-3.3-70b (le plus récent)
+        completion = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=st.session_state.messages,
+        )
+        response = completion.choices[0].message.content
+        st.markdown(response)
+        st.session_state.messages.append({"role": "assistant", "content": response})
