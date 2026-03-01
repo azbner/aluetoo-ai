@@ -7,7 +7,7 @@ import pytz
 # --- 1. CONFIGURATION ---
 client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
-# --- 2. STYLE CSS (DÉGRADÉ GÉANT ET FONDU) ---
+# --- 2. STYLE CSS (RETOURS DES INFOS ET LOOK ARC-EN-CIEL) ---
 st.markdown("""
     <style>
     .stApp {
@@ -20,15 +20,15 @@ st.markdown("""
         to { opacity: 1; filter: blur(0px); transform: translateY(0px); }
     }
 
-    /* LE CHAT : DÉGRADÉ ARC-EN-CIEL CONTINU */
+    /* LE CHAT : DÉGRADÉ ARC-EN-CIEL SUR TOUT LE BLOC */
     .assistant-response {
         font-weight: bold;
-        background: linear-gradient(to right, #ff4b4b, #af40ff, #00d4ff, #4bff80, #ff4b4b);
-        background-size: 200% auto;
+        background: linear-gradient(to right, #ff4b4b, #af40ff, #00d4ff, #4bff80);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
-        display: inline;
+        display: inline-block;
         font-size: 18px;
+        line-height: 1.6;
     }
 
     .word-fade {
@@ -36,26 +36,29 @@ st.markdown("""
         animation: ghostFade 0.8s ease-out forwards;
     }
 
-    /* HEADER EN DÉGRADÉ */
+    /* HEADER : ON FORCE LA VISIBILITÉ */
     .header-container {
         text-align: center;
-        margin-bottom: 30px;
+        margin-top: 20px;
+        margin-bottom: 40px;
+        display: block !important;
     }
     
     .main-title {
         font-size: 48px;
         font-weight: 800;
         color: white;
+        margin-bottom: 10px;
     }
 
     .full-gradient {
         font-weight: bold;
-        background: linear-gradient(left, #ff4b4b, #af40ff, #00d4ff);
+        background: linear-gradient(to right, #ff4b4b, #af40ff, #00d4ff);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
-        font-size: 26px;
+        font-size: 24px;
         display: block;
-        line-height: 1.4;
+        margin-top: 10px;
     }
 
     /* BARRE DE TEXTE PILULE */
@@ -77,6 +80,7 @@ st.markdown("""
         border: 1px solid #1f2328;
     }
 
+    /* Nettoyage interface */
     header {visibility: hidden;}
     footer {visibility: hidden;}
     </style>
@@ -92,7 +96,7 @@ if 5 <= maintenant.hour < 18:
 else:
     salutation = "Bonsoir"
 
-# --- 4. HEADER ---
+# --- 4. AFFICHAGE DU HEADER (VÉRIFIÉ) ---
 st.markdown(f"""
     <div class="header-container">
         <div class="main-title">🤖 ALUETOO AI</div>
@@ -114,8 +118,8 @@ for m in st.session_state.messages:
         else:
             st.markdown(m["content"])
 
-# --- 6. RÉPONSE AVEC DÉGRADÉ ÉTENDU ---
-if prompt := st.chat_input("Pose ta question..."):
+# --- 6. RÉPONSE AVEC DÉGRADÉ ET FONDU ---
+if prompt := st.chat_input("Écris ton message ici..."):
     with st.chat_message("user"):
         st.markdown(prompt)
     st.session_state.messages.append({"role": "user", "content": prompt})
@@ -132,16 +136,17 @@ if prompt := st.chat_input("Pose ta question..."):
             stream=True 
         )
 
-        display_html = '<div class="assistant-response">'
+        display_html = ""
         for chunk in completion:
             if chunk.choices[0].delta.content:
                 text = chunk.choices[0].delta.content
                 full_response += text
-                # Chaque mot est enveloppé pour le fondu, mais le dégradé est sur le conteneur parent
+                # Chaque mot est entouré pour le fondu, le dégradé est géré par la classe parent
                 display_html += f'<span class="word-fade">{text}</span>'
-                placeholder.markdown(display_html + '</div>', unsafe_allow_html=True)
+                placeholder.markdown(f'<div class="assistant-response">{display_html}</div>', unsafe_allow_html=True)
                 time.sleep(0.05)
         
+        # Affichage final stable
         placeholder.markdown(f'<div class="assistant-response">{full_response}</div>', unsafe_allow_html=True)
 
     st.session_state.messages.append({"role": "assistant", "content": full_response})
