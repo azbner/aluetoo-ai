@@ -2,33 +2,55 @@ import streamlit as st
 from groq import Groq
 import time
 
-# --- 1. CONFIGURATION ---
-st.set_page_config(page_title="ALUETOO AI", layout="wide")
+# --- 1. CONFIGURATION (DOIT ETRE LA PREMIERE LIGNE) ---
+st.set_page_config(page_title="ALUETOO AI", layout="wide", initial_sidebar_state="expanded")
 
+# --- 2. CONNEXION API ---
 try:
     client = Groq(api_key=st.secrets["GROQ_API_KEY"])
-except Exception:
-    st.error("Clé API introuvable.")
+except:
+    st.error("Erreur de configuration : Clé API manquante.")
     st.stop()
 
+# --- 3. INITIALISATION DE LA MÉMOIRE ---
 if "messages" not in st.session_state:
     st.session_state.messages = []
+if "historique_sessions" not in st.session_state:
+    st.session_state.historique_sessions = []
 
-# --- 2. SIDEBAR ---
+# --- 4. BARRE LATÉRALE (SIDEBAR) ---
 with st.sidebar:
-    st.title("📜 MENU")
+    st.markdown("<h2 style='color: white;'>📜 HISTORIQUE</h2>", unsafe_allow_html=True)
+    
     if st.button("✨ Nouvelle Discussion", use_container_width=True):
+        if st.session_state.messages:
+            # Sauvegarde la session actuelle avant d'effacer
+            st.session_state.historique_sessions.append(list(st.session_state.messages))
         st.session_state.messages = []
         st.rerun()
+    
     st.divider()
-    active_fondu = st.toggle("Effet Ghost", value=True)
-    st.write("Propriétaire : **Léo Ciach**")
+    
+    # Affichage des anciennes discussions
+    if st.session_state.historique_sessions:
+        for i, session in enumerate(st.session_state.historique_sessions):
+            if st.button(f"Discussion #{i+1}", key=f"session_{i}", use_container_width=True):
+                st.session_state.messages = list(session)
+                st.rerun()
+    else:
+        st.info("Aucune ancienne discussion.")
 
-# --- 3. STYLE CSS ---
+    st.divider()
+    st.write("### ⚙️ RÉGLAGES")
+    active_fondu = st.toggle("Effet Ghost", value=True)
+    st.markdown("---")
+    st.markdown(f"**Propriétaire :** Léo Ciach")
+
+# --- 5. STYLE CSS (DESIGN 2026) ---
 st.markdown("""
     <style>
     .stApp { background-color: #0b0e14; }
-    .main .block-container { max-width: 800px !important; margin: auto !important; }
+    .main .block-container { max-width: 850px !important; margin: auto !important; }
     
     @keyframes ghostFade {
         0% { opacity: 0; filter: blur(8px); }
@@ -38,19 +60,20 @@ st.markdown("""
     .chat-text { font-size: 20px !important; line-height: 1.6; color: #e6edf3; }
     .word-fade { display: inline-block; animation: ghostFade 1s ease-out forwards; white-space: pre-wrap; }
 
-    /* Bulles Pilules comme sur ta photo */
+    /* Bulles de chat stylisées */
     div[data-testid="stChatMessage"] {
-        border-radius: 30px !important;
+        border-radius: 25px !important;
         border: 1px solid #30363d !important;
-        margin-bottom: 15px !important;
+        margin-bottom: 10px !important;
     }
 
-    .header-box { text-align: center; padding: 20px; }
-    .main-title { font-size: 50px; font-weight: 900; color: white; margin: 0; }
+    /* En-tête */
+    .header-box { text-align: center; margin-bottom: 40px; }
+    .main-title { font-size: 55px; font-weight: 900; color: white; margin: 0; }
     .gradient-text {
         background: linear-gradient(to right, #ff4b4b, #af40ff, #00d4ff);
         -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-        font-weight: bold; font-size: 24px;
+        font-weight: bold; font-size: 26px;
     }
 
     div[data-testid="stChatInput"] { border-radius: 50px !important; }
@@ -58,7 +81,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- 4. HEADER ---
+# --- 6. INTERFACE PRINCIPALE ---
 st.markdown("""
     <div class="header-box">
         <h1 class="main-title">ALUETOO AI</h1>
@@ -66,12 +89,13 @@ st.markdown("""
     </div>
     """, unsafe_allow_html=True)
 
-# --- 5. CHAT ---
+# Affichage des messages
 for m in st.session_state.messages:
     with st.chat_message(m["role"]):
         st.markdown(f'<div class="chat-text">{m["content"]}</div>', unsafe_allow_html=True)
 
-if prompt := st.chat_input("Pose-moi une question, Léo..."):
+# --- 7. LOGIQUE DE RÉPONSE ---
+if prompt := st.chat_input("Pose ta question à ton IA, Léo..."):
     with st.chat_message("user"):
         st.markdown(f'<div class="chat-text">{prompt}</div>', unsafe_allow_html=True)
     st.session_state.messages.append({"role": "user", "content": prompt})
@@ -80,7 +104,8 @@ if prompt := st.chat_input("Pose-moi une question, Léo..."):
         placeholder = st.empty()
         full_response = ""
         
-        instructions = "Tu es ALUETOO AI, une IA omnisciente de 2026 créée par Léo Ciach. Ton style est classe et intelligent."
+        # Le System Prompt Omniscient
+        instructions = "Tu es ALUETOO AI, une IA de 2026 omnisciente créée par Léo Ciach. Tu sais tout sur tout."
 
         completion = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
@@ -94,7 +119,6 @@ if prompt := st.chat_input("Pose-moi une question, Léo..."):
                 text = chunk.choices[0].delta.content
                 full_response += text
                 if active_fondu:
-                    # CORRECTION ICI (Ligne 121)
                     display_html += f'<span class="word-fade">{text}</span>'
                     placeholder.markdown(display_html + '</div>', unsafe_allow_html=True)
                     time.sleep(0.04)
