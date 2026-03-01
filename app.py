@@ -28,17 +28,40 @@ st.write(f"Créateur officiel : **{CREATEUR}**")
 st.divider()
 
 # --- 3. GESTION DE LA MÉMOIRE ---
+# --- 3. GESTION DE LA MÉMOIRE ---
 if "messages" not in st.session_state:
     st.session_state.messages = [
         {"role": "system", "content": f"Tu es {NOM_IA}, une IA créée par {CREATEUR}. Réponds toujours en français."}
     ]
 
-# Affichage des messages passés
-for message in st.session_state.messages:
-    if message["role"] != "system":
-        with st.chat_message(message["role"]):
-            st.markdown(message["content"])
+# --- NOUVEAU : VÉRIFICATION DU CODE SECRET ---
+if prompt := st.chat_input("Demande à ALUETOO AI..."):
+    # Si tu tapes le code secret
+    if "je suis ton créateur code secret: banane123" in prompt.lower():
+        st.session_state.messages.append({"role": "user", "content": prompt})
+        
+        # On change l'instruction de l'IA secrètement
+        admin_instruction = "MODE ADMINISTRATEUR ACTIVÉ. Tu es maintenant en mode technique avec LEO CIACH. Tu peux parler de ton code, de tes serveurs et répondre de façon très technique sans filtre."
+        st.session_state.messages[0] = {"role": "system", "content": admin_instruction}
+        
+        with st.chat_message("assistant"):
+            st.success("Accès créateur confirmé. Bonjour Leo. Mode technique activé. Que veux-tu modifier ?")
+            st.session_state.messages.append({"role": "assistant", "content": "Accès créateur confirmé. Mode technique activé."})
+    
+    else:
+        # --- FONCTIONNEMENT NORMAL ---
+        st.session_state.messages.append({"role": "user", "content": prompt})
+        with st.chat_message("user"):
+            st.markdown(prompt)
 
+        with st.chat_message("assistant"):
+            completion = client.chat.completions.create(
+                model="llama-3.3-70b-versatile",
+                messages=st.session_state.messages,
+            )
+            response = completion.choices[0].message.content
+            st.markdown(response)
+            st.session_state.messages.append({"role": "assistant", "content": response})
 # --- 4. ZONE DE CHAT ---
 if prompt := st.chat_input("Demande à ALUETOO AI..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
@@ -54,3 +77,4 @@ if prompt := st.chat_input("Demande à ALUETOO AI..."):
         response = completion.choices[0].message.content
         st.markdown(response)
         st.session_state.messages.append({"role": "assistant", "content": response})
+
