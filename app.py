@@ -7,37 +7,33 @@ import pytz
 # --- 1. CONFIGURATION ---
 client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
-# --- 2. STYLE CSS AMÉLIORÉ ---
+# --- 2. STYLE CSS (FONDU LENT & HEADER DÉGRADÉ) ---
 st.markdown("""
     <style>
     .stApp { background-color: #0b0e14; }
 
-    /* L'animation de fondu : plus rapide et fluide */
+    /* Animation de fondu lent (Ghost Fade) */
     @keyframes ghostFade {
-        0% { opacity: 0; filter: blur(3px); transform: translateY(2px); }
+        0% { opacity: 0; filter: blur(6px); transform: translateY(4px); }
         100% { opacity: 1; filter: blur(0px); transform: translateY(0px); }
     }
 
-    /* Le style arc-en-ciel continu sur tout le bloc */
-    .assistant-response {
-        font-weight: bold;
-        background: linear-gradient(to right, #ff4b4b, #af40ff, #00d4ff, #4bff80);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        font-size: 19px;
+    /* Style du texte de l'IA (Blanc avec fondu, sans dégradé) */
+    .assistant-text {
+        color: #e6edf3;
+        font-size: 18px;
         line-height: 1.6;
         display: inline-block;
     }
 
-    /* La classe qui crée le fondu sur chaque nouveau mot */
     .word-fade {
         display: inline-block;
-        animation: ghostFade 0.5s ease-out forwards;
+        animation: ghostFade 1.2s ease-out forwards; /* Fondu plus lent */
         white-space: pre-wrap;
     }
 
-    /* Header en dégradé */
-    .header-container { text-align: center; margin-bottom: 30px; }
+    /* HEADER : ON GARDE LE DÉGRADÉ ICI */
+    .header-container { text-align: center; margin-bottom: 35px; }
     .main-title { font-size: 48px; font-weight: 800; color: white; }
     .full-gradient {
         font-weight: bold;
@@ -48,7 +44,7 @@ st.markdown("""
         display: block;
     }
 
-    /* Barre de texte pilule */
+    /* BARRE DE TEXTE PILULE */
     div[data-testid="stChatInput"] {
         border-radius: 50px !important;
         border: 2px solid #30363d !important;
@@ -84,12 +80,9 @@ if "messages" not in st.session_state:
 
 for m in st.session_state.messages:
     with st.chat_message(m["role"]):
-        if m["role"] == "assistant":
-            st.markdown(f'<div class="assistant-response">{m["content"]}</div>', unsafe_allow_html=True)
-        else:
-            st.markdown(m["content"])
+        st.markdown(m["content"])
 
-# --- 6. RÉPONSE AVEC FONDU RÉEL ---
+# --- 6. RÉPONSE AVEC FONDU LENT SANS DÉGRADÉ ---
 if prompt := st.chat_input("Écris ton message..."):
     with st.chat_message("user"):
         st.markdown(prompt)
@@ -98,11 +91,11 @@ if prompt := st.chat_input("Écris ton message..."):
     with st.chat_message("assistant"):
         placeholder = st.empty()
         full_response = ""
-        display_html = '<div class="assistant-response">'
+        display_html = '<div class="assistant-text">'
         
         completion = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
-            messages=[{"role": "system", "content": f"Tu es ALUETOO AI, IA de 2026."}] + st.session_state.messages,
+            messages=[{"role": "system", "content": "Tu es ALUETOO AI."}] + st.session_state.messages,
             stream=True 
         )
 
@@ -110,11 +103,11 @@ if prompt := st.chat_input("Écris ton message..."):
             if chunk.choices[0].delta.content:
                 text = chunk.choices[0].delta.content
                 full_response += text
-                # Utilisation d'un span spécifique pour chaque fragment avec l'animation
+                # Animation de fondu sur chaque nouveau segment
                 display_html += f'<span class="word-fade">{text}</span>'
                 placeholder.markdown(display_html + '</div>', unsafe_allow_html=True)
-                time.sleep(0.04)
+                time.sleep(0.06) # Vitesse réglée pour apprécier le fondu
         
-        placeholder.markdown(f'<div class="assistant-response">{full_response}</div>', unsafe_allow_html=True)
+        placeholder.markdown(full_response)
 
     st.session_state.messages.append({"role": "assistant", "content": full_response})
