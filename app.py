@@ -8,38 +8,37 @@ import pytz
 client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
 # --- 2. BARRE LATÉRALE (SWITCH) ---
-# On place le switch avant le CSS pour s'assurer qu'il est chargé
 with st.sidebar:
     st.title("⚙️ Réglages")
     active_fondu = st.toggle("Activer l'effet de fondu lent", value=True)
     st.divider()
     st.info("Design ALUETOO AI v2026")
 
-# --- 3. STYLE CSS (CENTRAGE ET STABILITÉ) ---
+# --- 3. STYLE CSS (CENTRAGE TOTAL ET PILULE) ---
 st.markdown(f"""
     <style>
-    /* Fond général */
+    /* Fond et suppression des marges inutiles */
     .stApp {{ background-color: #0b0e14; }}
-
-    /* Centrage du contenu principal */
+    
+    /* CENTRAGE DU CONTENU (Le secret est ici) */
     .main .block-container {{
-        max-width: 800px;
-        padding-top: 2rem;
-        margin: auto;
+        max-width: 700px !important;
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
+        margin: auto !important;
     }}
 
-    /* Animation Ghost */
+    /* Animation Ghost stable */
     @keyframes ghostFade {{
-        0% {{ opacity: 0; filter: blur(6px); transform: scale(1.02); }}
-        100% {{ opacity: 1; filter: blur(0px); transform: scale(1); }}
+        0% {{ opacity: 0; filter: blur(6px); }}
+        100% {{ opacity: 1; filter: blur(0px); }}
     }}
 
-    /* Texte du chat agrandi (20px) et stable */
+    /* Texte du chat agrandi et stable */
     .chat-text {{
         font-size: 20px !important;
         line-height: 1.6;
         color: #e6edf3;
-        font-family: 'Source Sans Pro', sans-serif;
     }}
 
     .word-fade {{
@@ -48,9 +47,13 @@ st.markdown(f"""
         white-space: pre-wrap;
     }}
 
-    /* HEADER DÉGRADÉ */
-    .header-container {{ text-align: center; margin-bottom: 40px; }}
-    .main-title {{ font-size: 48px; font-weight: 800; color: white; margin-bottom: 0px; }}
+    /* HEADER CENTRÉ ET DÉGRADÉ */
+    .header-container {{ 
+        text-align: center; 
+        width: 100%;
+        margin-bottom: 40px; 
+    }}
+    .main-title {{ font-size: 48px; font-weight: 800; color: white; }}
     .full-gradient {{
         font-weight: bold;
         background: linear-gradient(to right, #ff4b4b, #af40ff, #00d4ff);
@@ -60,28 +63,25 @@ st.markdown(f"""
         display: block;
     }}
 
-    /* BARRE PILULE FORCÉE */
+    /* BARRE PILULE CENTRÉE */
     div[data-testid="stChatInput"] {{
         border-radius: 50px !important; 
         border: 2px solid #30363d !important;
         background-color: #161b22 !important;
         padding: 8px !important;
-        max-width: 800px;
-        margin: auto;
+        width: 100% !important;
     }}
     
     div[data-testid="stChatInput"] textarea {{
         border-radius: 50px !important;
         padding-left: 20px !important;
         font-size: 18px !important;
-        background-color: transparent !important;
     }}
 
-    /* Bulles de chat centrées et propres */
+    /* Bulles de chat */
     .stChatMessage {{ 
         border-radius: 30px !important; 
         border: 1px solid #1f2328;
-        margin-bottom: 15px !important;
     }}
 
     header, footer {{ visibility: hidden; }}
