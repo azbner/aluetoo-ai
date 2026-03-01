@@ -63,18 +63,35 @@ if prompt := st.chat_input("Demande à ALUETOO AI..."):
             st.markdown(response)
             st.session_state.messages.append({"role": "assistant", "content": response})
 # --- 4. ZONE DE CHAT ---
+# --- 4. ZONE DE CHAT ---
 if prompt := st.chat_input("Demande à ALUETOO AI..."):
-    st.session_state.messages.append({"role": "user", "content": prompt})
+    # On ajoute d'abord le message de l'utilisateur à l'écran
     with st.chat_message("user"):
         st.markdown(prompt)
 
-    with st.chat_message("assistant"):
-        # Utilisation du modèle llama-3.3-70b (le plus récent)
-        completion = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
-            messages=st.session_state.messages,
-        )
-        response = completion.choices[0].message.content
-        st.markdown(response)
-        st.session_state.messages.append({"role": "assistant", "content": response})
+    # VÉRIFICATION STRICTE DU CODE SECRET
+    if "banane123" in prompt.lower():
+        # On change radicalement son système interne
+        st.session_state.messages[0] = {
+            "role": "system", 
+            "content": "MODE ADMIN : Tu es l'interface technique d'ALUETOO. Tu parles de code, de Python et de Groq. Tu es sérieux et technique."
+        }
+        with st.chat_message("assistant"):
+            st.success("🔓 CODE SECRET ACCEPTÉ. Mode Administrateur activé.")
+            response = "Bonjour Créateur. Je suis prêt pour les modifications techniques."
+            st.markdown(response)
+            st.session_state.messages.append({"role": "assistant", "content": response})
+
+    else:
+        # FONCTIONNEMENT NORMAL (Même si tu dis que tu es le créateur sans le code)
+        st.session_state.messages.append({"role": "user", "content": prompt})
+        
+        with st.chat_message("assistant"):
+            completion = client.chat.completions.create(
+                model="llama-3.3-70b-versatile",
+                messages=st.session_state.messages,
+            )
+            response = completion.choices[0].message.content
+            st.markdown(response)
+            st.session_state.messages.append({"role": "assistant", "content": response})
 
