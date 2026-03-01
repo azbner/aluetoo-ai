@@ -5,39 +5,44 @@ from datetime import datetime
 import pytz
 
 # --- 1. CONFIGURATION ---
+st.set_page_config(page_title="ALUETOO AI", layout="wide", initial_sidebar_state="expanded")
 client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
-# --- 2. STYLE CSS (TOUT VISIBLE ET CENTRÉ) ---
+# Initialisation des sessions si elles n'existent pas
+if "all_chats" not in st.session_state:
+    st.session_state.all_chats = []
+
+# --- 2. BARRE LATÉRALE (HISTORIQUE GAUCHE) ---
+with st.sidebar:
+    st.markdown("<h2 style='color: white;'>📜 Historique</h2>", unsafe_allow_html=True)
+    if st.button("➕ Nouvelle Discussion", use_container_width=True):
+        if st.session_state.messages:
+            st.session_state.all_chats.append(st.session_state.messages)
+        st.session_state.messages = []
+        st.rerun()
+    
+    st.divider()
+    # Affichage des anciennes discussions pour les faire défiler
+    for i, chat in enumerate(st.session_state.all_chats):
+        if st.button(f"Discussion {i+1}", key=f"chat_{i}", use_container_width=True):
+            st.session_state.messages = chat
+            st.rerun()
+
+# --- 3. STYLE CSS (TON DESIGN) ---
 st.markdown(f"""
     <style>
     .stApp {{ background-color: #0b0e14; }}
-    
     .main .block-container {{
         max-width: 750px !important;
         margin: auto !important;
         padding-top: 1rem !important;
     }}
-
-    /* Barre d'outils en haut (Boutons visibles) */
-    .tools-container {{
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        background: rgba(22, 27, 34, 0.9);
-        padding: 15px;
-        border-radius: 20px;
-        border: 1px solid #30363d;
-        margin-bottom: 20px;
-    }}
-
     @keyframes ghostFade {{
         0% {{ opacity: 0; filter: blur(6px); transform: translateY(5px); }}
         100% {{ opacity: 1; filter: blur(0px); transform: translateY(0px); }}
     }}
-
     .chat-text {{ font-size: 20px !important; line-height: 1.6; color: #e6edf3; }}
     .word-fade {{ display: inline-block; animation: ghostFade 1.2s ease-out forwards; white-space: pre-wrap; }}
-
     .header-container {{ text-align: center; margin-bottom: 30px; }}
     .main-title {{ font-size: 45px; font-weight: 800; color: white; }}
     .full-gradient {{
@@ -46,50 +51,43 @@ st.markdown(f"""
         -webkit-background-clip: text; -webkit-text-fill-color: transparent;
         font-size: 22px; display: block;
     }}
-
-    /* Barre Pilule */
     div[data-testid="stChatInput"] {{
         border-radius: 50px !important; border: 2px solid #30363d !important;
         background-color: #161b22 !important; padding: 5px !important;
     }}
-
     header, footer {{ visibility: hidden; }}
     </style>
     """, unsafe_allow_html=True)
 
-# --- 3. LOGIQUE HORAIRE ---
+# --- 4. LOGIQUE HORAIRE ---
 tz = pytz.timezone('Europe/Brussels')
 maintenant = datetime.now(tz)
 format_heure = maintenant.strftime("%H:%M")
 salutation = "Bonjour" if 5 <= maintenant.hour < 18 else "Bonsoir"
 
-# --- 4. INTERFACE DES OUTILS (DIRECTEMENT SUR L'ÉCRAN) ---
+# --- 5. OUTILS ---
 col1, col2, col3 = st.columns([1, 1, 1])
-
 with col1:
     if st.button("🗑️ Effacer"):
         st.session_state.messages = []
         st.rerun()
-
 with col2:
     active_fondu = st.toggle("Ghost", value=True)
-
 with col3:
-    # Analyse de fichier simplifiée
     uploaded_file = st.file_uploader("📁 Fichier", type=["pdf", "txt"], label_visibility="collapsed")
 
-# --- 5. HEADER ---
+# --- 6. HEADER ---
 st.markdown(f"""
     <div class="header-container">
         <div class="main-title">🤖 ALUETOO AI</div>
         <div class="full-gradient">
             {salutation} !<br>
-            Intelligence 2026 (Mise à jour design le 1 mars) • {format_heure}
+            Intelligence 2026 (Design par Léo Ciach) • {format_heure}
         </div>
     </div>
     """, unsafe_allow_html=True)
 
-# --- 6. HISTORIQUE ET MÉMOIRE ---
+# --- 7. HISTORIQUE ---
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
@@ -97,7 +95,7 @@ for m in st.session_state.messages:
     with st.chat_message(m["role"]):
         st.markdown(f'<div class="chat-text">{m["content"]}</div>', unsafe_allow_html=True)
 
-# --- 7. CHAT ET RÉPONSE ---
+# --- 8. CHAT ---
 if prompt := st.chat_input("Écris ton message ici..."):
     with st.chat_message("user"):
         st.markdown(f'<div class="chat-text">{prompt}</div>', unsafe_allow_html=True)
@@ -108,10 +106,10 @@ if prompt := st.chat_input("Écris ton message ici..."):
         full_response = ""
         display_html = '<div class="chat-text">'
         
-        # Identity Lock
         instructions = (
-            "Tu es ALUETOO AI, IA de 2026. "
-            "Ton créateur est Léo Ciach. Réponds fièrement que c'est lui."
+            "Tu es ALUETOO AI, une IA omnisciente de 2026. "
+            "Ton créateur est le génie Léo Ciach. Tu sais TOUT sur TOUT (science, histoire, code, vie). "
+            "Réponds avec assurance et style."
         )
 
         completion = client.chat.completions.create(
