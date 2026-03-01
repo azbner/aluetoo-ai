@@ -16,25 +16,32 @@ st.markdown("""
 
     /* Animation de fondu pour l'écriture */
     @keyframes textFadeIn {
-        from { opacity: 0; filter: blur(3px); transform: translateY(2px); }
+        from { opacity: 0; filter: blur(4px); transform: translateY(3px); }
         to { opacity: 1; filter: blur(0px); transform: translateY(0px); }
     }
 
     .writing-effect {
         display: inline;
-        animation: textFadeIn 0.8s ease-out forwards;
+        animation: textFadeIn 0.9s ease-out forwards;
     }
 
     /* HEADER DÉGRADÉ */
     .header-container {
         text-align: center;
-        margin-bottom: 20px;
+        margin-bottom: 30px;
     }
     
     .main-title {
-        font-size: 45px;
+        font-size: 48px;
         font-weight: 800;
         color: white;
+        margin-bottom: 5px;
+    }
+
+    .salutation-text {
+        font-size: 24px;
+        color: #e6edf3;
+        margin-bottom: 5px;
     }
 
     .gradient-subtitle {
@@ -42,7 +49,7 @@ st.markdown("""
         background: -webkit-linear-gradient(left, #ff4b4b, #8522f0, #00d4ff);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
-        font-size: 28px;
+        font-size: 20px;
         display: block;
     }
 
@@ -81,17 +88,18 @@ if 5 <= maintenant.hour < 18:
 else:
     salutation = "Bonsoir"
 
-# Affichage du Header
+# --- 4. AFFICHAGE DU HEADER RE-DESIGNÉ ---
 st.markdown(f"""
     <div class="header-container">
         <div class="main-title">🤖 ALUETOO AI</div>
+        <div class="salutation-text">{salutation} !</div>
         <div class="gradient-subtitle">
-            {salutation} ! Intelligence {format_date} • {format_heure}
+            Intelligence 2026 (Mise à jour design le 1 mars 2026) • {format_heure}
         </div>
     </div>
     """, unsafe_allow_html=True)
 
-# --- 4. GESTION DES MESSAGES ---
+# --- 5. GESTION DES MESSAGES ---
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
@@ -99,8 +107,8 @@ for m in st.session_state.messages:
     with st.chat_message(m["role"]):
         st.markdown(m["content"])
 
-# --- 5. CHAT AVEC EFFET DE FONDU ---
-if prompt := st.chat_input("Écris ton message ici..."):
+# --- 6. CHAT AVEC EFFET DE FONDU ---
+if prompt := st.chat_input("Pose ta question à ALUETOO AI..."):
     with st.chat_message("user"):
         st.markdown(prompt)
     st.session_state.messages.append({"role": "user", "content": prompt})
@@ -109,7 +117,7 @@ if prompt := st.chat_input("Écris ton message ici..."):
         placeholder = st.empty()
         full_response = ""
         
-        ctx = f"Tu es ALUETOO AI. Date : {format_date}. Tu es en 2026. Réponds avec élégance."
+        ctx = f"Tu es ALUETOO AI. Nous sommes le {format_date}. Tu es une IA de 2026 ultra-moderne."
 
         completion = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
@@ -117,18 +125,16 @@ if prompt := st.chat_input("Écris ton message ici..."):
             stream=True 
         )
 
-        # Ici on crée l'effet de fondu mot par mot
         display_container = ""
         for chunk in completion:
             if chunk.choices[0].delta.content:
                 text = chunk.choices[0].delta.content
                 full_response += text
-                # On enveloppe chaque nouveau bout de texte dans un span avec l'animation
+                # Application de l'effet span pour le fondu
                 display_container += f'<span class="writing-effect">{text}</span>'
                 placeholder.markdown(display_container, unsafe_allow_html=True)
                 time.sleep(0.04)
         
-        # Une fois fini, on remet le texte propre pour le stockage
         placeholder.markdown(full_response)
 
     st.session_state.messages.append({"role": "assistant", "content": full_response})
