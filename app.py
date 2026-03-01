@@ -7,92 +7,94 @@ import pytz
 # --- 1. CONFIGURATION ---
 client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
-# --- 2. BARRE LATÉRALE (SWITCH) ---
-with st.sidebar:
-    st.title("⚙️ Réglages")
-    active_fondu = st.toggle("Activer l'effet de fondu lent", value=True)
-    st.divider()
-    st.info("Design ALUETOO AI v2026")
-
-# --- 3. STYLE CSS (CENTRAGE TOTAL ET PILULE) ---
-st.markdown(f"""
+# --- 2. STYLE CSS (CENTRAGE, SWITCH À DROITE ET PILULE) ---
+st.markdown("""
     <style>
-    /* Fond et suppression des marges inutiles */
-    .stApp {{ background-color: #0b0e14; }}
-    
-    /* CENTRAGE DU CONTENU (Le secret est ici) */
-    .main .block-container {{
-        max-width: 700px !important;
-        padding-left: 1rem !important;
-        padding-right: 1rem !important;
+    .stApp { background-color: #0b0e14; }
+
+    /* Centrage de la page */
+    .main .block-container {
+        max-width: 750px !important;
         margin: auto !important;
-    }}
+        padding-top: 1rem !important;
+    }
 
-    /* Animation Ghost stable */
-    @keyframes ghostFade {{
-        0% {{ opacity: 0; filter: blur(6px); }}
-        100% {{ opacity: 1; filter: blur(0px); }}
-    }}
+    /* Positionnement du Switch en haut à droite */
+    .stToggle {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 1000;
+        background: rgba(22, 27, 34, 0.8);
+        padding: 10px;
+        border-radius: 15px;
+        border: 1px solid #30363d;
+    }
 
-    /* Texte du chat agrandi et stable */
-    .chat-text {{
+    /* Animation Ghost */
+    @keyframes ghostFade {
+        0% { opacity: 0; filter: blur(6px); }
+        100% { opacity: 1; filter: blur(0px); }
+    }
+
+    /* Texte du chat stable à 20px */
+    .chat-text {
         font-size: 20px !important;
         line-height: 1.6;
         color: #e6edf3;
-    }}
+    }
 
-    .word-fade {{
+    .word-fade {
         display: inline-block;
         animation: ghostFade 1.2s ease-out forwards;
         white-space: pre-wrap;
-    }}
+    }
 
-    /* HEADER CENTRÉ ET DÉGRADÉ */
-    .header-container {{ 
-        text-align: center; 
-        width: 100%;
-        margin-bottom: 40px; 
-    }}
-    .main-title {{ font-size: 48px; font-weight: 800; color: white; }}
-    .full-gradient {{
+    /* Header centré */
+    .header-container { text-align: center; margin-bottom: 40px; }
+    .main-title { font-size: 45px; font-weight: 800; color: white; }
+    .full-gradient {
         font-weight: bold;
         background: linear-gradient(to right, #ff4b4b, #af40ff, #00d4ff);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
-        font-size: 24px;
+        font-size: 22px;
         display: block;
-    }}
+    }
 
-    /* BARRE PILULE CENTRÉE */
-    div[data-testid="stChatInput"] {{
+    /* Barre Pilule */
+    div[data-testid="stChatInput"] {
         border-radius: 50px !important; 
         border: 2px solid #30363d !important;
         background-color: #161b22 !important;
-        padding: 8px !important;
-        width: 100% !important;
-    }}
+        padding: 5px !important;
+    }
     
-    div[data-testid="stChatInput"] textarea {{
+    div[data-testid="stChatInput"] textarea {
         border-radius: 50px !important;
         padding-left: 20px !important;
         font-size: 18px !important;
-    }}
+    }
 
-    /* Bulles de chat */
-    .stChatMessage {{ 
-        border-radius: 30px !important; 
+    /* Style des bulles de chat */
+    .stChatMessage { 
+        border-radius: 25px !important; 
         border: 1px solid #1f2328;
-    }}
+        margin-bottom: 10px;
+    }
 
-    header, footer {{ visibility: hidden; }}
+    header, footer { visibility: hidden; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 4. LOGIQUE HORAIRE ---
+# --- 3. LOGIQUE HORAIRE ---
 tz = pytz.timezone('Europe/Brussels')
 maintenant = datetime.now(tz)
 format_heure = maintenant.strftime("%H:%M")
 salutation = "Bonjour" if 5 <= maintenant.hour < 18 else "Bonsoir"
+
+# --- 4. LE SWITCH (Visible sur l'écran) ---
+active_fondu = st.toggle("Effet Ghost", value=True)
 
 # --- 5. HEADER ---
 st.markdown(f"""
@@ -105,7 +107,7 @@ st.markdown(f"""
     </div>
     """, unsafe_allow_html=True)
 
-# --- 6. GESTION DES MESSAGES ---
+# --- 6. MESSAGES ---
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
