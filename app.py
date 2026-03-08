@@ -3,138 +3,101 @@ from groq import Groq
 import time
 from datetime import datetime
 import pytz
+from streamlit_mic_recorder import mic_recorder # Pour le micro
+import base64
 
 # --- 1. CONFIGURATION ---
-st.set_page_config(page_title="ALUETOO AI", layout="wide")
+st.set_page_config(page_title="ALUETOO AI - VISION & VOICE", layout="wide")
 client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
+# Initialisation des états
 if "messages" not in st.session_state:
     st.session_state.messages = []
 if "all_chats" not in st.session_state:
     st.session_state.all_chats = []
 
-# --- 2. STYLE CSS (DESIGN XXL & DÉGRADÉ) ---
+# --- 2. FONCTION LECTURE VOCALE (AUDIO) ---
+def speak_text(text):
+    # Utilise le navigateur pour lire le texte sans serveur externe
+    js_code = f"""
+    <script>
+    var msg = new SpeechSynthesisUtterance("{text.replace('"', "'")}");
+    msg.lang = 'fr-FR';
+    window.speechSynthesis.speak(msg);
+    </script>
+    """
+    st.components.v1.html(js_code, height=0)
+
+# --- 3. STYLE CSS ---
 st.markdown("""
     <style>
     .stApp { background-color: #0b0e14; }
-    .main .block-container {
-        max-width: 900px !important;
-        margin: auto !important;
-    }
-    
-    /* Animation Ghost */
-    @keyframes ghostFade {
-        0% { opacity: 0; filter: blur(6px); }
-        100% { opacity: 1; filter: blur(0px); }
-    }
-    .chat-text { font-size: 20px !important; color: #e6edf3; }
-    .word-fade { display: inline-block; animation: ghostFade 1.2s ease-out forwards; white-space: pre-wrap; }
-
-    /* TITRES XXL EN DEGRADE */
-    .header-container { text-align: center; margin-bottom: 40px; line-height: 1.2; }
-    
     .mega-title {
         font-weight: 900;
         background: linear-gradient(to right, #ff4b4b, #af40ff, #00d4ff);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
-        font-size: 65px; /* Très grand */
-        display: block;
-        margin-bottom: 10px;
+        font-size: 65px; text-align: center;
     }
-
-    .sub-mega-title {
-        font-weight: 800;
-        background: linear-gradient(to right, #00d4ff, #af40ff, #ff4b4b);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        font-size: 45px; /* Même taille que le bonjour */
-        display: block;
-    }
-
-    /* Historique Important */
-    .history-box {
-        background: rgba(255, 255, 255, 0.05);
-        border: 2px solid #30363d;
-        border-radius: 25px;
-        padding: 20px;
-        margin-bottom: 30px;
-    }
-
-    div[data-testid="stChatInput"] { border-radius: 50px !important; }
-    header, footer { visibility: hidden; }
+    .chat-text { font-size: 18px; color: #e6edf3; }
+    /* Style pour les boutons audio/photo */
+    .stButton>button { border-radius: 20px; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 3. LOGIQUE HORAIRE ---
-tz = pytz.timezone('Europe/Brussels')
-maintenant = datetime.now(tz)
-salutation = "Bonjour" if 5 <= maintenant.hour < 18 else "Bonsoir"
+# --- 4. HEADER ---
+st.markdown('<div class="mega-title">ALUETOO AI</div>', unsafe_allow_html=True)
 
-# --- 4. HISTORIQUE EN HAUT (IMPORTANT) ---
-with st.container():
-    st.markdown('<div class="history-box">', unsafe_allow_html=True)
-    st.markdown("### 📜 GESTION DES DISCUSSIONS")
-    c1, c2 = st.columns([1, 2])
-    with c1:
-        if st.button("✨ Nouvelle Discussion", use_container_width=True):
-            if st.session_state.messages:
-                st.session_state.all_chats.insert(0, st.session_state.messages)
-            st.session_state.messages = []
-            st.rerun()
-    with c2:
-        if st.session_state.all_chats:
-            opts = [f"Ancienne Discussion {len(st.session_state.all_chats)-i}" for i in range(len(st.session_state.all_chats))]
-            sel = st.selectbox("Historique :", ["Choisir..."] + opts, label_visibility="collapsed")
-            if sel != "Choisir...":
-                idx = len(st.session_state.all_chats) - int(sel.split()[-1])
-                st.session_state.messages = st.session_state.all_chats[idx]
-                st.rerun()
-    st.markdown('</div>', unsafe_allow_html=True)
+# --- 5. BARRE D'OUTILS (PHOTO & MICRO) ---
+with st.sidebar:
+    st.markdown("### 🛠️ OUTILS MULTIMÉDIA")
+    
+    # GESTION PHOTO
+    uploaded_file = st.file_uploader("📷 Analyser une photo", type=["jpg", "png", "jpeg"])
+    if uploaded_file:
+        st.image(uploaded_file, caption="Photo chargée", use_column_width=True)
 
-# --- 5. HEADER XXL ---
-st.markdown(f"""
-    <div class="header-container">
-        <div class="mega-title">ALUETOO AI</div>
-        <div class="sub-mega-title">{salutation} (design mis à jour le 1 mars 2026)</div>
-    </div>
-    """, unsafe_allow_html=True)
+    # GESTION MICRO
+    st.markdown("🎤 **Parler à l'IA :**")
+    audio = mic_recorder(start_prompt="Démarrer l'écoute", stop_prompt="Arrêter & Envoyer", key='recorder')
 
-# --- 6. CHAT ---
-active_fondu = st.toggle("Effet Ghost", value=True)
+# --- 6. LOGIQUE DE CHAT ---
 
+# Affichage des messages
 for m in st.session_state.messages:
     with st.chat_message(m["role"]):
         st.markdown(f'<div class="chat-text">{m["content"]}</div>', unsafe_allow_html=True)
 
-if prompt := st.chat_input("Pose ta question ici..."):
+# Gestion de l'entrée (Texte ou Audio)
+prompt = st.chat_input("Pose ta question ici...")
+
+# Si on reçoit de l'audio, on pourrait utiliser Whisper ici (pour l'instant on gère le texte)
+if audio:
+    # Ici on ajouterait Whisper pour transcrire l'audio.json
+    st.warning("Transcription audio en cours d'implémentation (nécessite Whisper API)")
+
+if prompt or uploaded_file:
+    user_content = prompt if prompt else "Analyse cette image."
+    
     with st.chat_message("user"):
-        st.markdown(f'<div class="chat-text">{prompt}</div>', unsafe_allow_html=True)
-    st.session_state.messages.append({"role": "user", "content": prompt})
+        st.markdown(f'<div class="chat-text">{user_content}</div>', unsafe_allow_html=True)
+    st.session_state.messages.append({"role": "user", "content": user_content})
 
     with st.chat_message("assistant"):
-        placeholder = st.empty()
-        full_response = ""
-        display_html = '<div class="chat-text">'
+        # Sélection du modèle (Vision si photo, sinon Classique)
+        model_name = "llama-3.2-11b-vision-preview" if uploaded_file else "llama-3.3-70b-versatile"
         
-        instructions = "Tu es ALUETOO AI, une IA omnisciente créée par Léo Ciach. Tu sais tout."
-
         completion = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
-            messages=[{"role": "system", "content": instructions}] + st.session_state.messages,
-            stream=True 
+            model=model_name,
+            messages=[{"role": "system", "content": "Tu es ALUETOO AI. Tu peux voir et entendre."}] + st.session_state.messages,
+            stream=False # Stream désactivé pour faciliter la lecture vocale après
         )
 
-        for chunk in completion:
-            if chunk.choices[0].delta.content:
-                text = chunk.choices[0].delta.content
-                full_response += text
-                if active_fondu:
-                    display_html += f'<span class="word-fade">{text}</span>'
-                    placeholder.markdown(display_html + '</div>', unsafe_allow_html=True)
-                    time.sleep(0.04)
-                else:
-                    placeholder.markdown(f'<div class="chat-text">{full_response}</div>', unsafe_allow_html=True)
+        response = completion.choices[0].message.content
+        st.markdown(f'<div class="chat-text">{response}</div>', unsafe_allow_html=True)
         
-        placeholder.markdown(f'<div class="chat-text">{full_response}</div>', unsafe_allow_html=True)
-    st.session_state.messages.append({"role": "assistant", "content": full_response})
+        # LECTURE AUTOMATIQUE
+        if st.button("🔊 Lire la réponse"):
+            speak_text(response)
+
+    st.session_state.messages.append({"role": "assistant", "content": response})
