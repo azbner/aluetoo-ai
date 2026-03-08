@@ -68,7 +68,7 @@ h = datetime.now(tz).hour
 salut = "Bonjour" if 5 <= h < 18 else "Bonsoir"
 
 st.markdown('<div class="mega-title">ALUETOO AI</div>', unsafe_allow_html=True)
-st.markdown(f'<div class="sub-mega-title">{salut} Léo, je t\'écoute.</div>', unsafe_allow_html=True)
+st.markdown(f'<div class="sub-mega-title">{salut} !, je t\'écoute.</div>', unsafe_allow_html=True)
 
 # --- 5. BARRE LATÉRALE (VISION) ---
 with st.sidebar:
@@ -138,3 +138,4 @@ if prompt := st.chat_input("Pose ta question..."):
 
     # Sauvegarde de la réponse
     st.session_state.messages.append({"role": "assistant", "content": full_response})
+
