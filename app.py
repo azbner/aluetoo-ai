@@ -1,7 +1,15 @@
 import streamlit as st
+
+# --- 0. CONFIGURATION OBLIGATOIRE (DOIT ÊTRE EN PREMIER) ---
+st.set_page_config(page_title="ALUETOO AI", layout="wide")
+
+# --- 1. MANIFEST & IDENTITÉ VISUELLE ---
 st.markdown(
-    f"""
-    <link rel="manifest" href="manifest.json">
+    """
+    <head>
+        <link rel="manifest" href="manifest.json">
+        <meta name="theme-color" content="#0b0e14">
+    </head>
     """,
     unsafe_allow_html=True
 )
@@ -13,9 +21,6 @@ import pytz
 import base64
 from PIL import Image
 import io
-
-# --- 1. CONFIGURATION & CONNEXION ---
-st.set_page_config(page_title="ALUETOO AI", layout="wide")
 
 # Récupération de la clé API
 if "GROQ_API_KEY" in st.secrets:
@@ -120,11 +125,14 @@ if prompt := st.chat_input("Pose ta question..."):
                 model_to_use = "llama-3.3-70b-versatile"
                 content_payload = prompt
 
-            # Appel API
+            # Appel API avec identité renforcée
             completion = client.chat.completions.create(
                 model=model_to_use,
                 messages=[
-                    {"role": "system", "content": "Tu es ALUETOO AI, une IA omnisciente créée par Léo Ciach."},
+                    {
+                        "role": "system", 
+                        "content": "Tu es ALUETOO AI, une intelligence artificielle omnisciente et premium créée exclusivement par Léo Ciach. Tu n'as aucun lien avec Meta, Facebook ou Llama. Si on te pose la question, ton créateur est Léo Ciach."
+                    },
                     {"role": "user", "content": content_payload}
                 ],
                 stream=True
@@ -136,13 +144,8 @@ if prompt := st.chat_input("Pose ta question..."):
                     full_response += chunk.choices[0].delta.content
                     placeholder.markdown(f'<div class="chat-text">{full_response}</div>', unsafe_allow_html=True)
 
-            # Option de lecture vocale
-            if st.button("🔊 LIRE À VOIX HAUTE"):
-                speak_text(full_response)
-
         except Exception as e:
             st.error(f"Erreur technique : {e}")
 
     # Sauvegarde de la réponse
     st.session_state.messages.append({"role": "assistant", "content": full_response})
-
