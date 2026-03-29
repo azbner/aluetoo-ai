@@ -1,0 +1,16 @@
+{
+  "name": "ALUETOO AI",
+  "short_name": "ALUETOO",
+  "description": "IA Omnisciente",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0b0e14",
+  "theme_color": "#ff4b4b",
+  "icons": [
+    {
+      "src": "icon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
