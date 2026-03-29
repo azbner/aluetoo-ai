@@ -157,7 +157,7 @@ if prompt := st.chat_input("Dis quelque chose à ALUETOO..."):
             # SÉLECTION DU MODÈLE (Vision ou Texte)
             if uploaded_file:
                 # Modèle Vision Stable
-                model_to_use = "llama-3.2-11b-vision-preview" 
+                model_to_use = "meta-llama/llama-4-scout-17b-16e-instruct" 
                 base64_img = encode_image(uploaded_file)
                 messages_payload = [
                     {
