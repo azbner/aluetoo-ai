@@ -73,12 +73,6 @@ st.markdown("""
         transform: scale(1.05);
         box-shadow: 0px 0px 15px #af40ff;
     }
-/* Masquer le header et le footer Streamlit */
-header {visibility: hidden;}
-footer {visibility: hidden;}
-#MainMenu {visibility: hidden;}
-div[data-testid="stDecoration"] {display: none;
-    }
     </style>
 """, unsafe_allow_html=True)
 # --- 3. GESTION DE LA MÉMOIRE (HISTORIQUE) ---
