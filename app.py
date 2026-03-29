@@ -8,7 +8,7 @@ from PIL import Image
 import io
 
 # --- 2. DESIGN XXL & PERSONNALISATION (TON STYLE) ---
-st.markdown("""
+st.markdown(""")
     <style>
     /* Fond de l'application */
     .stApp { background-color: #0b0e14; }
