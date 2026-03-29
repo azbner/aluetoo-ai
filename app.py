@@ -122,7 +122,8 @@ if prompt := st.chat_input("Pose ta question à ALUETOO..."):
                         ]
                     }
                 ]
-                model = "llama-3.2-11b-vision-preview"
+                model = "model = "llama-3.2-11b-vision"
+
             # SINON -> MODE TEXTE CLASSIQUE
             else:
                 messages_payload = [
