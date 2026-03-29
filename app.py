@@ -1,3 +1,4 @@
+import streamlit as st
 st.markdown(
     f"""
     <link rel="manifest" href="manifest.json">
@@ -5,7 +6,6 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-import streamlit as st
 from groq import Groq
 import time
 from datetime import datetime
