@@ -117,7 +117,7 @@ heure_actuelle = now.strftime("%H:%M")
 salut = "Bonjour" if 5 <= now.hour < 18 else "Bonsoir"
 
 st.markdown('<div class="mega-title">ALUETOO AI</div>', unsafe_allow_html=True)
-st.markdown(f'<div class="sub-mega-title">{salut} Léo ! Nous sommes le {date_du_jour}, il est {heure_actuelle}.</div>', unsafe_allow_html=True)
+st.markdown(f'<div class="sub-mega-title">{salut} ! Nous sommes le {date_du_jour}, il est {heure_actuelle}.</div>', unsafe_allow_html=True)
 
 # --- 6. BARRE LATÉRALE (SIDEBAR) ---
 with st.sidebar:
