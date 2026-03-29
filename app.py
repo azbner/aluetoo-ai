@@ -75,6 +75,11 @@ st.markdown("""
     }
     </style>
     """, unsafe_allow_html=True)
+/* Masquer le header et le footer Streamlit */
+header {visibility: hidden;}
+footer {visibility: hidden;}
+#MainMenu {visibility: hidden;}
+div[data-testid="stDecoration"] {display: none;}
 
 # --- 3. GESTION DE LA MÉMOIRE (HISTORIQUE) ---
 if "GROQ_API_KEY" in st.secrets:
