@@ -73,8 +73,6 @@ st.markdown("""
         transform: scale(1.05);
         box-shadow: 0px 0px 15px #af40ff;
     }
-    </style>
-    
 /* Masquer le header et le footer Streamlit */
 header {visibility: hidden;}
 footer {visibility: hidden;}
