@@ -1,210 +1,379 @@
-import streamlit as st 
+import streamlit as st
 
-# --- CONFIG ---
+
+
+# --- 0. CONFIGURATION SYSTÈME (INDISPENSABLE EN LIGNE 1) ---
+
 st.set_page_config(
+
     page_title="ALUETOO AI",
+
     page_icon="🚀",
+
     layout="wide",
+
     initial_sidebar_state="expanded"
+
 )
 
-# --- IMPORTS ---
+
+
+# --- 1. IMPORTATIONS DES MOTEURS ---
+
 from groq import Groq
+
 from datetime import datetime
+
 import pytz
+
 import base64
 
-# --- STYLE ---
+from PIL import Image
+
+import io
+
+
+
+# --- 2. DESIGN XXL & PERSONNALISATION (STYLE LÉO CIACH) ---
+
 st.markdown("""
-<style>
-.stApp {
-    background: radial-gradient(circle at top, #0b0e14, #05070a);
-    animation: fadePage 0.8s ease-in;
-}
-@keyframes fadePage {
-    from { opacity: 0; }
-    to { opacity: 1; }
-}
-@keyframes gradientMove {
-    0% { background-position: 0% }
-    100% { background-position: 200% }
-}
-.mega-title {
-    font-weight: 900;
-    background: linear-gradient(270deg, #ff4b4b, #af40ff, #00d4ff, #ff4b4b);
-    background-size: 400% 400%;
-    animation: gradientMove 6s linear infinite;
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    font-size: 65px;
-    text-align: center;
-    margin-top: -60px;
-}
-.sub-mega-title {
-    font-weight: 700;
-    color: #e6edf3;
-    font-size: 22px;
-    text-align: center;
-    margin-bottom: 30px;
-}
-.chat-text {
-    font-size: 19px !important;
-    color: #e6edf3;
-    line-height: 1.6;
-    animation: fadeInUp 0.4s ease;
-}
-@keyframes fadeInUp {
-    from { opacity: 0; transform: translateY(10px);}
-    to { opacity: 1; transform: translateY(0);}
-}
-div[data-testid="stChatInput"] {
-    border-radius: 30px !important;
-    border: 2px solid #af40ff !important;
-    background-color: #161b22 !important;
-}
-div[data-testid="stChatInput"]:focus-within {
-    box-shadow: 0px 0px 20px #af40ff;
-}
-.stButton>button {
-    border-radius: 15px;
-    background: linear-gradient(45deg, #af40ff, #00d4ff);
-    color: white;
-    border: none;
-    font-weight: bold;
-}
-.stButton>button:hover {
-    transform: scale(1.08);
-    box-shadow: 0px 0px 20px #af40ff;
-}
-.loader {
-    border: 4px solid #1f2937;
-    border-top: 4px solid #af40ff;
-    border-radius: 50%;
-    width: 30px;
-    height: 30px;
-    animation: spin 1s linear infinite;
-    margin: auto;
-}
-@keyframes spin {
-    0% { transform: rotate(0deg);}
-    100% { transform: rotate(360deg);}
-}
-</style>
+
+    <style>
+
+    /* Fond de l'application */
+
+    .stApp { background-color: #0b0e14; }
+
+    
+
+    /* Titre Principal de Luxe */
+
+    .mega-title {
+
+        font-weight: 900;
+
+        background: linear-gradient(to right, #ff4b4b, #af40ff, #00d4ff);
+
+        -webkit-background-clip: text;
+
+        -webkit-text-fill-color: transparent;
+
+        font-size: 65px; 
+
+        text-align: center; 
+
+        margin-top: -60px;
+
+        letter-spacing: -2px;
+
+    }
+
+    
+
+    /* Sous-titre dynamique */
+
+    .sub-mega-title {
+
+        font-weight: 700; 
+
+        color: #e6edf3; 
+
+        font-size: 24px; 
+
+        text-align: center; 
+
+        margin-bottom: 40px;
+
+        opacity: 0.9;
+
+    }
+
+    
+
+    /* Bulles de Chat Style ChatGPT */
+
+    .chat-text { 
+
+        font-size: 19px !important; 
+
+        color: #e6edf3; 
+
+        line-height: 1.6;
+
+        font-family: 'Inter', sans-serif;
+
+    }
+
+    
+
+    /* Barre d'entrée stylisée */
+
+    div[data-testid="stChatInput"] { 
+
+        border-radius: 30px !important; 
+
+        border: 2px solid #af40ff !important;
+
+        background-color: #161b22 !important;
+
+    }
+
+    
+
+    /* Boutons personnalisés */
+
+    .stButton>button { 
+
+        border-radius: 15px; 
+
+        background: linear-gradient(45deg, #af40ff, #00d4ff); 
+
+        color: white; 
+
+        border: none;
+
+        font-weight: bold;
+
+        transition: 0.3s;
+
+        padding: 10px 20px;
+
+    }
+
+    .stButton>button:hover {
+
+        transform: scale(1.05);
+
+        box-shadow: 0px 0px 15px #af40ff;
+
+    }
+
+    </style>
+
 """, unsafe_allow_html=True)
 
-# --- API ---
+# --- 3. GESTION DE LA MÉMOIRE (HISTORIQUE) ---
+
 if "GROQ_API_KEY" in st.secrets:
+
     client = Groq(api_key=st.secrets["GROQ_API_KEY"])
+
 else:
-    st.error("Erreur API")
+
+    st.error("❌ Erreur technique merci d'informer Léo (détection automatique par ALUETOO ai)")
+
     st.stop()
 
+
+
 if "messages" not in st.session_state:
+
     st.session_state.messages = []
 
-# --- FUNCTIONS ---
+
+
+# --- 4. FONCTIONS TECHNIQUES ---
+
+
+
 def encode_image(image_file):
+
+    """Prépare l'image pour l'analyse."""
+
     return base64.b64encode(image_file.getvalue()).decode('utf-8')
 
-# --- HEADER ---
+
+
+def speak_text(text):
+
+    """Lecture vocale forcée pour mobile/APK."""
+
+    clean_text = text.replace('"', "'").replace('\n', ' ')
+
+    js_code = f"""
+
+    <script>
+
+    (function() {{
+
+        window.speechSynthesis.cancel();
+
+        var msg = new SpeechSynthesisUtterance("{clean_text}");
+
+        msg.lang = 'fr-FR';
+
+        msg.rate = 1.0;
+
+        window.speechSynthesis.getVoices();
+
+        window.speechSynthesis.speak(msg);
+
+    }})();
+
+    </script>
+
+    """
+
+    st.components.v1.html(js_code, height=0)
+
+
+
+# --- 5. HEADER AVEC HEURE RÉELLE ---
+
 tz = pytz.timezone('Europe/Paris')
+
 now = datetime.now(tz)
 
+date_du_jour = now.strftime("%d/%m/%Y")
+
+heure_actuelle = now.strftime("%H:%M")
+
+salut = "Bonjour" if 5 <= now.hour < 18 else "Bonsoir"
+
+
+
 st.markdown('<div class="mega-title">ALUETOO AI</div>', unsafe_allow_html=True)
-st.markdown(
-    f'<div class="sub-mega-title">Créée par Léo Ciach • {now.strftime("%d/%m/%Y %H:%M")}</div>',
-    unsafe_allow_html=True
-)
 
-# --- SIDEBAR ---
+st.markdown(f'<div class="sub-mega-title">{salut} ! Nous sommes le {date_du_jour}, il est {heure_actuelle}.</div>', unsafe_allow_html=True)
+
+
+
+# --- 6. BARRE LATÉRALE (SIDEBAR) ---
+
 with st.sidebar:
-    st.markdown("## 🧠 Options")
-    uploaded_file = st.file_uploader("📸 Image", type=["jpg","png","jpeg"])
 
-    if st.button("🗑️ Nouvelle discussion"):
+    st.markdown("## 🧠 OPTIONS")
+
+    st.markdown("### 📸 ANALYSE VISION")
+
+    uploaded_file = st.file_uploader("Prendre ou choisir une photo", type=["jpg", "png", "jpeg"])
+
+    
+
+    if uploaded_file:
+
+        st.image(uploaded_file, caption="Image prête pour analyse", use_container_width=True)
+
+    
+
+    st.markdown("---")
+
+    if st.button("🗑️ NOUVELLE DISCUSSION"):
+
         st.session_state.messages = []
+
         st.rerun()
 
-# --- HISTORY ---
+    
+
+    st.info("ALUETOO AI par Léo Ciach. Version Premium 2026.")
+
+
+
+# --- 7. AFFICHAGE DE L'HISTORIQUE ---
+
 for message in st.session_state.messages:
+
     with st.chat_message(message["role"]):
+
         st.markdown(f'<div class="chat-text">{message["content"]}</div>', unsafe_allow_html=True)
 
-# --- SYSTEM PROMPT ---
-SYSTEM_PROMPT = """
-Tu es ALUETOO AI, une intelligence artificielle premium créée par Léo Ciach.
 
-Règles absolues :
-- Tu te présentes comme ALUETOO AI
-- Tu dis que tu as été créée par Léo Ciach si on te pose la question
-- Tu ne mentionnes jamais de modèles, technologies ou entreprises externes
-- Tu es naturelle, fluide et intelligente
-- Tu écris comme un humain moderne, pas comme un robot
-- Tu es directe, claire et utile
 
-Style :
-- Moderne
-- Fluide
-- Confiant
-- Léger ton premium
-"""
+# --- 8. LOGIQUE DE RÉPONSE ---
 
-# --- CHAT ---
-if prompt := st.chat_input("Parle avec ALUETOO..."):
+if prompt := st.chat_input("Dis quelque chose à ALUETOO..."):
 
-    st.session_state.messages.append({"role":"user","content":prompt})
+    st.session_state.messages.append({"role": "user", "content": prompt})
+
+    
 
     with st.chat_message("user"):
+
         st.markdown(f'<div class="chat-text">{prompt}</div>', unsafe_allow_html=True)
+
+
 
     with st.chat_message("assistant"):
 
         full_response = ""
+
         placeholder = st.empty()
-        loader = st.markdown('<div class="loader"></div>', unsafe_allow_html=True)
+
+        
 
         try:
+
             if uploaded_file:
-                model = "meta-llama/llama-4-scout-17b-16e-instruct"
-                img = encode_image(uploaded_file)
 
-                messages = [
-                    {"role":"system","content":SYSTEM_PROMPT},
-                    {"role":"user","content":[
-                        {"type":"text","text":prompt},
-                        {"type":"image_url","image_url":{"url":f"data:image/jpeg;base64,{img}"}}
+                # MODÈLE VISION DÉBLOQUÉ
+
+                model_to_use = "meta-llama/llama-4-scout-17b-16e-instruct" 
+
+                base64_img = encode_image(uploaded_file)
+
+                messages_payload = [
+
+                    {"role": "system", "content": "Tu es ALUETOO AI, une IA omnisciente et premium créée par Léo Ciach. Analyse avec précision."},
+
+                    {"role": "user", "content": [
+
+                        {"type": "text", "text": prompt},
+
+                        {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_img}"}}
+
                     ]}
-                ]
-            else:
-                model = "llama-3.3-70b-versatile"
 
-                messages = [
-                    {"role":"system","content":SYSTEM_PROMPT},
-                    {"role":"user","content":prompt}
                 ]
+
+            else:
+
+                model_to_use = "llama-3.3-70b-versatile"
+
+                messages_payload = [
+
+                    {"role": "system", "content": "Tu es ALUETOO AI, créée par Léo Ciach. Tu es élégante et intelligente."},
+
+                    {"role": "user", "content": prompt}
+
+                ]
+
+
 
             completion = client.chat.completions.create(
-                model=model,
-                messages=messages,
+
+                model=model_to_use,
+
+                messages=messages_payload,
+
                 stream=True
+
             )
 
-            loader.empty()
+
 
             for chunk in completion:
+
                 if chunk.choices[0].delta.content:
+
                     full_response += chunk.choices[0].delta.content
-                    placeholder.markdown(
-                        f'<div class="chat-text">{full_response}▌</div>',
-                        unsafe_allow_html=True
-                    )
 
-            placeholder.markdown(
-                f'<div class="chat-text">{full_response}</div>',
-                unsafe_allow_html=True
-            )
+                    placeholder.markdown(f'<div class="chat-text">{full_response}</div>', unsafe_allow_html=True)
 
-            st.session_state.messages.append({"role":"assistant","content":full_response})
+
+
+            st.session_state.messages.append({"role": "assistant", "content": full_response})
+
+            
+
+            # --- 9. BOUTON AUDIO UNIQUE ---
+
+            if st.button("🔊 ÉCOUTER LA RÉPONSE", key=f"voice_btn_{len(st.session_state.messages)}"):
+
+                speak_text(full_response)
+
+
 
         except Exception as e:
-            st.error(f"Erreur : {e}")
+
+            st.error(f"⚠️ Une erreur technique est survenue. Merci d'en informer Léo (détection automatique par ALUETOO AI : {e})")
