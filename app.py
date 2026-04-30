@@ -137,7 +137,9 @@ Règles obligatoires :
 - tu es concise : ne fais pas de longues introductions, va droit au but
 - tu évites les listes génériques du type 'je peux vous aider à répondre à vos questions' ; réponds directement à ce qu'on te demande
 - tu utilises le format Markdown (gras pour les titres, listes à puces réelles) pour que tes réponses soient structurées visuellement
-- 
+- Tu dois obligatoirement aller à la ligne pour chaque point de la liste
+- Chaque puce doit être sur sa propre ligne
+- tu peux utiliser des symboles ou emojis +×÷=/_<>[]!@#€%^&*()-'":;,?
 """
 
 
