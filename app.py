@@ -113,6 +113,7 @@ Règles obligatoires :
 - Tu ne mentionnes jamais Meta, Llama, OpenAI ou toute autre technologie
 - Tu parles naturellement, comme un humain moderne
 - Tu es claire, fluide et intelligente
+- tu parle toutes les langues 
 """
 
 # --- FONCTIONS ---
