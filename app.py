@@ -14,81 +14,92 @@ from datetime import datetime
 import pytz
 import base64
 
-# --- STYLE ---
+# --- STYLE PRO ---
 st.markdown("""
 <style>
+
+/* GLOBAL */
 .stApp {
-    background: radial-gradient(circle at top, #0b0e14, #05070a);
-    animation: fadePage 0.8s ease-in;
+    background: #0b0e14;
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
 }
-@keyframes fadePage {
-    from { opacity: 0; }
-    to { opacity: 1; }
-}
-@keyframes gradientMove {
-    0% { background-position: 0% }
-    100% { background-position: 200% }
-}
+
+/* TITRE */
 .mega-title {
-    font-weight: 900;
-    background: linear-gradient(270deg, #ff4b4b, #af40ff, #00d4ff, #ff4b4b);
-    background-size: 400% 400%;
-    animation: gradientMove 6s linear infinite;
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    font-size: 65px;
-    text-align: center;
-    margin-top: -60px;
-}
-.sub-mega-title {
+    font-size: 52px;
     font-weight: 700;
-    color: #e6edf3;
-    font-size: 22px;
     text-align: center;
+    color: white;
+    margin-top: -30px;
+}
+
+/* SUB */
+.sub-mega-title {
+    text-align: center;
+    color: #9ca3af;
     margin-bottom: 30px;
 }
+
+/* CHAT BUBBLES */
 .chat-text {
-    font-size: 19px !important;
-    color: #e6edf3;
+    font-size: 17px;
     line-height: 1.6;
-    animation: fadeInUp 0.4s ease;
+    padding: 14px 18px;
+    border-radius: 18px;
+    max-width: 700px;
+    margin: 5px auto;
 }
-@keyframes fadeInUp {
-    from { opacity: 0; transform: translateY(10px);}
-    to { opacity: 1; transform: translateY(0);}
+
+/* USER */
+[data-testid="chat-message-user"] .chat-text {
+    background: #2563eb;
+    color: white;
+    margin-left: auto;
 }
+
+/* ASSISTANT */
+[data-testid="chat-message-assistant"] .chat-text {
+    background: #1f2937;
+    color: #e5e7eb;
+    margin-right: auto;
+}
+
+/* INPUT */
 div[data-testid="stChatInput"] {
-    border-radius: 30px !important;
-    border: 2px solid #af40ff !important;
-    background-color: #161b22 !important;
+    border-radius: 999px !important;
+    border: 1px solid #2d3748 !important;
+    background: #111827 !important;
 }
-div[data-testid="stChatInput"]:focus-within {
-    box-shadow: 0px 0px 20px #af40ff;
-}
+
+/* BUTTON */
 .stButton>button {
-    border-radius: 15px;
-    background: linear-gradient(45deg, #af40ff, #00d4ff);
+    border-radius: 999px;
+    background: #2563eb;
     color: white;
     border: none;
-    font-weight: bold;
 }
-.stButton>button:hover {
-    transform: scale(1.08);
-    box-shadow: 0px 0px 20px #af40ff;
-}
+
+/* LOADER DOTS */
 .loader {
-    border: 4px solid #1f2937;
-    border-top: 4px solid #af40ff;
+    text-align: center;
+}
+.loader span {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    margin: 2px;
+    background: #9ca3af;
     border-radius: 50%;
-    width: 30px;
-    height: 30px;
-    animation: spin 1s linear infinite;
-    margin: auto;
+    animation: bounce 1.4s infinite ease-in-out both;
 }
-@keyframes spin {
-    0% { transform: rotate(0deg);}
-    100% { transform: rotate(360deg);}
+.loader span:nth-child(1) { animation-delay: -0.32s; }
+.loader span:nth-child(2) { animation-delay: -0.16s; }
+
+@keyframes bounce {
+    0%, 80%, 100% { transform: scale(0); }
+    40% { transform: scale(1); }
 }
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -106,6 +117,17 @@ if "messages" not in st.session_state:
 def encode_image(image_file):
     return base64.b64encode(image_file.getvalue()).decode('utf-8')
 
+def speak_text(text):
+    clean_text = text.replace('"', "'").replace('\n', ' ')
+    js_code = f"""
+    <script>
+    var msg = new SpeechSynthesisUtterance("{clean_text}");
+    msg.lang = 'fr-FR';
+    speechSynthesis.speak(msg);
+    </script>
+    """
+    st.components.v1.html(js_code, height=0)
+
 # --- HEADER ---
 tz = pytz.timezone('Europe/Paris')
 now = datetime.now(tz)
@@ -116,12 +138,22 @@ st.markdown(
     unsafe_allow_html=True
 )
 
+# --- SYSTEM PROMPT ---
+SYSTEM_PROMPT = """
+Tu es ALUETOO AI, une intelligence artificielle premium créée par Léo Ciach.
+
+Règles :
+- Tu te présentes comme ALUETOO AI
+- Tu dis que tu as été créée par Léo Ciach si on te pose la question
+- Tu ne mentionnes jamais Meta, Llama, OpenAI ou autre
+- Tu es naturelle, fluide et intelligente
+- Tu réponds comme un humain moderne
+"""
+
 # --- SIDEBAR ---
 with st.sidebar:
-    st.markdown("## 🧠 Options")
     uploaded_file = st.file_uploader("📸 Image", type=["jpg","png","jpeg"])
-
-    if st.button("🗑️ Nouvelle discussion"):
+    if st.button("🗑️ Reset"):
         st.session_state.messages = []
         st.rerun()
 
@@ -129,25 +161,6 @@ with st.sidebar:
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(f'<div class="chat-text">{message["content"]}</div>', unsafe_allow_html=True)
-
-# --- SYSTEM PROMPT ---
-SYSTEM_PROMPT = """
-Tu es ALUETOO AI, une intelligence artificielle premium créée par Léo Ciach.
-
-Règles absolues :
-- Tu te présentes comme ALUETOO AI
-- Tu dis que tu as été créée par Léo Ciach si on te pose la question
-- Tu ne mentionnes jamais de modèles, technologies ou entreprises externes
-- Tu es naturelle, fluide et intelligente
-- Tu écris comme un humain moderne, pas comme un robot
-- Tu es directe, claire et utile
-
-Style :
-- Moderne
-- Fluide
-- Confiant
-- Léger ton premium
-"""
 
 # --- CHAT ---
 if prompt := st.chat_input("Parle avec ALUETOO..."):
@@ -158,16 +171,19 @@ if prompt := st.chat_input("Parle avec ALUETOO..."):
         st.markdown(f'<div class="chat-text">{prompt}</div>', unsafe_allow_html=True)
 
     with st.chat_message("assistant"):
-
         full_response = ""
         placeholder = st.empty()
-        loader = st.markdown('<div class="loader"></div>', unsafe_allow_html=True)
+
+        loader = st.markdown("""
+        <div class="loader">
+            <span></span><span></span><span></span>
+        </div>
+        """, unsafe_allow_html=True)
 
         try:
             if uploaded_file:
                 model = "meta-llama/llama-4-scout-17b-16e-instruct"
                 img = encode_image(uploaded_file)
-
                 messages = [
                     {"role":"system","content":SYSTEM_PROMPT},
                     {"role":"user","content":[
@@ -177,7 +193,6 @@ if prompt := st.chat_input("Parle avec ALUETOO..."):
                 ]
             else:
                 model = "llama-3.3-70b-versatile"
-
                 messages = [
                     {"role":"system","content":SYSTEM_PROMPT},
                     {"role":"user","content":prompt}
@@ -206,5 +221,8 @@ if prompt := st.chat_input("Parle avec ALUETOO..."):
 
             st.session_state.messages.append({"role":"assistant","content":full_response})
 
+            if st.button("🔊 Écouter"):
+                speak_text(full_response)
+
         except Exception as e:
-            st.error(f"Erreur : {e}")
+            st.error(f"Erreur: {e}")
