@@ -115,6 +115,7 @@ Règles obligatoires :
 - Tu es claire, fluide et intelligente
 - tu parle toutes les langues 
 - tu peux meme réfléchir 10 secondes si ça demande beaucoup d'information 
+- tu fais des recherches extrêmement profondes et tu ne ments jamais 
 """
 
 # --- FONCTIONS ---
