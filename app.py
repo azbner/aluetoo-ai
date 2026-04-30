@@ -1,53 +1,47 @@
 import streamlit as st 
-
-# --- CONFIG ---
-st.set_page_config(
-    page_title="ALUETOO AI",
-    page_icon="🚀",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
-
-# --- IMPORTS ---
 from groq import Groq
 from datetime import datetime
 import pytz
 import base64
 
-# --- STYLE PRO ---
+# --- CONFIG ---
+st.set_page_config(
+    page_title="ALUETOO AI",
+    page_icon="🚀",
+    layout="centered"
+)
+
+# --- STYLE CLEAN ---
 st.markdown("""
 <style>
 
 /* GLOBAL */
 .stApp {
-    background: #0b0e14;
+    background-color: #0b0e14;
     font-family: -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
-/* TITRE */
-.mega-title {
-    font-size: 52px;
-    font-weight: 700;
+/* HEADER */
+.title {
     text-align: center;
+    font-size: 32px;
+    font-weight: 600;
     color: white;
-    margin-top: -30px;
+    margin-top: 10px;
 }
 
-/* SUB */
-.sub-mega-title {
+.subtitle {
     text-align: center;
     color: #9ca3af;
-    margin-bottom: 30px;
+    margin-bottom: 20px;
 }
 
-/* CHAT BUBBLES */
+/* CHAT */
 .chat-text {
-    font-size: 17px;
-    line-height: 1.6;
-    padding: 14px 18px;
-    border-radius: 18px;
+    padding: 12px 16px;
+    border-radius: 14px;
+    margin: 8px 0;
     max-width: 700px;
-    margin: 5px auto;
 }
 
 /* USER */
@@ -67,19 +61,11 @@ st.markdown("""
 /* INPUT */
 div[data-testid="stChatInput"] {
     border-radius: 999px !important;
-    border: 1px solid #2d3748 !important;
+    border: 1px solid #374151 !important;
     background: #111827 !important;
 }
 
-/* BUTTON */
-.stButton>button {
-    border-radius: 999px;
-    background: #2563eb;
-    color: white;
-    border: none;
-}
-
-/* LOADER DOTS */
+/* LOADER */
 .loader {
     text-align: center;
 }
@@ -104,66 +90,33 @@ div[data-testid="stChatInput"] {
 """, unsafe_allow_html=True)
 
 # --- API ---
-if "GROQ_API_KEY" in st.secrets:
-    client = Groq(api_key=st.secrets["GROQ_API_KEY"])
-else:
-    st.error("Erreur API")
-    st.stop()
+client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# --- FUNCTIONS ---
-def encode_image(image_file):
-    return base64.b64encode(image_file.getvalue()).decode('utf-8')
+# --- SYSTEM ---
+SYSTEM_PROMPT = """
+Tu es ALUETOO AI, une intelligence artificielle créée par Léo Ciach.
 
-def speak_text(text):
-    clean_text = text.replace('"', "'").replace('\n', ' ')
-    js_code = f"""
-    <script>
-    var msg = new SpeechSynthesisUtterance("{clean_text}");
-    msg.lang = 'fr-FR';
-    speechSynthesis.speak(msg);
-    </script>
-    """
-    st.components.v1.html(js_code, height=0)
+Tu ne mentionnes jamais d'autres technologies.
+Tu es naturelle, fluide et intelligente.
+"""
 
 # --- HEADER ---
 tz = pytz.timezone('Europe/Paris')
 now = datetime.now(tz)
 
-st.markdown('<div class="mega-title">ALUETOO AI</div>', unsafe_allow_html=True)
-st.markdown(
-    f'<div class="sub-mega-title">Créée par Léo Ciach • {now.strftime("%d/%m/%Y %H:%M")}</div>',
-    unsafe_allow_html=True
-)
+st.markdown('<div class="title">ALUETOO AI</div>', unsafe_allow_html=True)
+st.markdown(f'<div class="subtitle">Créée par Léo • {now.strftime("%H:%M")}</div>', unsafe_allow_html=True)
 
-# --- SYSTEM PROMPT ---
-SYSTEM_PROMPT = """
-Tu es ALUETOO AI, une intelligence artificielle premium créée par Léo Ciach.
+# --- CHAT HISTORY ---
+for m in st.session_state.messages:
+    with st.chat_message(m["role"]):
+        st.markdown(f'<div class="chat-text">{m["content"]}</div>', unsafe_allow_html=True)
 
-Règles :
-- Tu te présentes comme ALUETOO AI
-- Tu dis que tu as été créée par Léo Ciach si on te pose la question
-- Tu ne mentionnes jamais Meta, Llama, OpenAI ou autre
-- Tu es naturelle, fluide et intelligente
-- Tu réponds comme un humain moderne
-"""
-
-# --- SIDEBAR ---
-with st.sidebar:
-    uploaded_file = st.file_uploader("📸 Image", type=["jpg","png","jpeg"])
-    if st.button("🗑️ Reset"):
-        st.session_state.messages = []
-        st.rerun()
-
-# --- HISTORY ---
-for message in st.session_state.messages:
-    with st.chat_message(message["role"]):
-        st.markdown(f'<div class="chat-text">{message["content"]}</div>', unsafe_allow_html=True)
-
-# --- CHAT ---
-if prompt := st.chat_input("Parle avec ALUETOO..."):
+# --- INPUT ---
+if prompt := st.chat_input("Écris un message..."):
 
     st.session_state.messages.append({"role":"user","content":prompt})
 
@@ -171,7 +124,8 @@ if prompt := st.chat_input("Parle avec ALUETOO..."):
         st.markdown(f'<div class="chat-text">{prompt}</div>', unsafe_allow_html=True)
 
     with st.chat_message("assistant"):
-        full_response = ""
+
+        full = ""
         placeholder = st.empty()
 
         loader = st.markdown("""
@@ -180,49 +134,28 @@ if prompt := st.chat_input("Parle avec ALUETOO..."):
         </div>
         """, unsafe_allow_html=True)
 
-        try:
-            if uploaded_file:
-                model = "meta-llama/llama-4-scout-17b-16e-instruct"
-                img = encode_image(uploaded_file)
-                messages = [
-                    {"role":"system","content":SYSTEM_PROMPT},
-                    {"role":"user","content":[
-                        {"type":"text","text":prompt},
-                        {"type":"image_url","image_url":{"url":f"data:image/jpeg;base64,{img}"}}
-                    ]}
-                ]
-            else:
-                model = "llama-3.3-70b-versatile"
-                messages = [
-                    {"role":"system","content":SYSTEM_PROMPT},
-                    {"role":"user","content":prompt}
-                ]
+        completion = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[
+                {"role":"system","content":SYSTEM_PROMPT},
+                {"role":"user","content":prompt}
+            ],
+            stream=True
+        )
 
-            completion = client.chat.completions.create(
-                model=model,
-                messages=messages,
-                stream=True
-            )
+        loader.empty()
 
-            loader.empty()
+        for chunk in completion:
+            if chunk.choices[0].delta.content:
+                full += chunk.choices[0].delta.content
+                placeholder.markdown(
+                    f'<div class="chat-text">{full}▌</div>',
+                    unsafe_allow_html=True
+                )
 
-            for chunk in completion:
-                if chunk.choices[0].delta.content:
-                    full_response += chunk.choices[0].delta.content
-                    placeholder.markdown(
-                        f'<div class="chat-text">{full_response}▌</div>',
-                        unsafe_allow_html=True
-                    )
+        placeholder.markdown(
+            f'<div class="chat-text">{full}</div>',
+            unsafe_allow_html=True
+        )
 
-            placeholder.markdown(
-                f'<div class="chat-text">{full_response}</div>',
-                unsafe_allow_html=True
-            )
-
-            st.session_state.messages.append({"role":"assistant","content":full_response})
-
-            if st.button("🔊 Écouter"):
-                speak_text(full_response)
-
-        except Exception as e:
-            st.error(f"Erreur: {e}")
+        st.session_state.messages.append({"role":"assistant","content":full})
