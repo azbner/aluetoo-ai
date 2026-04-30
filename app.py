@@ -79,7 +79,7 @@ st.markdown("""
 if "GROQ_API_KEY" in st.secrets:
     client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 else:
-    st.error("❌ Erreur fatale : Clé API manquante dans les secrets Streamlit.")
+    st.error("❌ Erreur technique merci d'informer Léo (détection automatique par ALUETOO ai)")
     st.stop()
 
 if "messages" not in st.session_state:
