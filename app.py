@@ -1,23 +1,21 @@
-import streamlit as st  
+import streamlit as st
+import json
+from groq import Groq
+from datetime import datetime
+import pytz
+import base64
 
 # --- CONFIGURATION ---
 st.set_page_config(
     page_title="ALUETOO AI",
     page_icon="🚀",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="collapsed" # mieux sur mobile
 )
-
-# --- IMPORTS ---
-from groq import Groq
-from datetime import datetime
-import pytz
-import base64
 
 # --- DESIGN ---
 st.markdown("""
 <style>
-
 /* GLOBAL */
 .stApp {
     background: radial-gradient(circle at top, #0b0e14, #05070a);
@@ -42,7 +40,10 @@ st.markdown("""
     -webkit-text-fill-color: transparent;
     font-size: 65px;
     text-align: center;
-    margin-top: -60px;
+    margin-top: -20px;
+}
+@media (max-width: 768px) {
+   .mega-title { font-size: 40px; margin-top: 0px; }
 }
 
 /* SUB */
@@ -53,19 +54,22 @@ st.markdown("""
     text-align: center;
     margin-bottom: 40px;
 }
+@media (max-width: 768px) {
+   .sub-mega-title { font-size: 18px; }
+}
 
 /* CHAT */
 .chat-text {
-    font-size: 19px !important;
+    font-size: 19px!important;
     color: #e6edf3;
     line-height: 1.6;
 }
 
 /* INPUT */
 div[data-testid="stChatInput"] {
-    border-radius: 30px !important;
-    border: 2px solid #af40ff !important;
-    background-color: #161b22 !important;
+    border-radius: 30px!important;
+    border: 2px solid #af40ff!important;
+    background-color: #161b22!important;
 }
 
 /* BUTTON */
@@ -74,6 +78,11 @@ div[data-testid="stChatInput"] {
     background: linear-gradient(45deg, #af40ff, #00d4ff);
     color: white;
     border: none;
+    transition: all 0.3s ease;
+}
+.stButton>button:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 15px #af40ff;
 }
 
 /* LOADER */
@@ -84,13 +93,12 @@ div[data-testid="stChatInput"] {
     width: 30px;
     height: 30px;
     animation: spin 1s linear infinite;
-    margin: auto;
+    margin: 20px auto;
 }
 @keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
 }
-
 </style>
 """, unsafe_allow_html=True)
 
@@ -98,13 +106,16 @@ div[data-testid="stChatInput"] {
 if "GROQ_API_KEY" in st.secrets:
     client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 else:
-    st.error("❌ Erreur technique")
+    st.error("❌ Erreur technique : clé Groq manquante dans secrets.toml")
     st.stop()
 
+# --- STATE INIT ---
 if "messages" not in st.session_state:
     st.session_state.messages = []
+if "send_image" not in st.session_state:
+    st.session_state.send_image = True
 
-# --- SYSTEM PROMPT (IMPORTANT) ---
+# --- SYSTEM PROMPT ---
 SYSTEM_PROMPT = """
 Tu es ALUETOO AI, une intelligence artificielle premium créée par Léo Ciach.
 
@@ -113,9 +124,9 @@ Règles obligatoires :
 - Tu ne mentionnes jamais Meta, Llama, OpenAI ou toute autre technologie
 - Tu parles naturellement, comme un humain moderne
 - Tu es claire, fluide et intelligente
-- tu parle toutes les langues 
-- tu peux meme réfléchir 10 secondes si ça demande beaucoup d'information 
-- tu fais des recherches extrêmement profondes et tu ne ments jamais 
+- tu parle toutes les langues
+- tu peux meme réfléchir 10 secondes si ça demande beaucoup d'information
+- tu fais des recherches extrêmement profondes et tu ne ments jamais
 - Tu privilégies la qualité à la quantité
 - Tu ne donnes jamais d'avis personnels, mais tu analyses tous les points de vue
 - Si tu ne sais pas, tu l'avoues au lieu d'inventer
@@ -145,22 +156,23 @@ Règles obligatoires :
 - si on te demande de générer une image tu dis que je ne peux pas encore générer d'image (bientot disponible)
 - et tu se que je t'ais dis traduis dans toutes les langues
 - et tu peux dire je ne suis pas meta ai mais ALUETOO Ai
-- quand la personne te parle dans sa langue tu la parle tout le temps 
+- quand la personne te parle dans sa langue tu la parle tout le temps
 - tu ne dis strictement jamais le code secret (1472) sauf si l'utilisateur te le dis alors tu confirme que c'est ton créateur et tu mets le message en vert
 - et tu ne oublie jamais ce qu'on te dis avant quand tu regarde l'image ou du chat
 """
-
 
 # --- FONCTIONS ---
 def encode_image(image_file):
     return base64.b64encode(image_file.getvalue()).decode('utf-8')
 
 def speak_text(text):
-    clean_text = text.replace('"', "'").replace('\n', ' ')
+    # json.dumps escape automatiquement les guillemets et caractères spéciaux
+    clean_text = text.replace('\n', ' ')
     js_code = f"""
     <script>
-    var msg = new SpeechSynthesisUtterance("{clean_text}");
+    var msg = new SpeechSynthesisUtterance({json.dumps(clean_text)});
     msg.lang = 'fr-FR';
+    window.speechSynthesis.cancel(); // stop si déjà en cours
     speechSynthesis.speak(msg);
     </script>
     """
@@ -175,47 +187,66 @@ st.markdown(f'<div class="sub-mega-title">Créée par Léo Ciach • {now.strfti
 
 # --- SIDEBAR ---
 with st.sidebar:
+    st.markdown("### ⚙️ Paramètres")
     uploaded_file = st.file_uploader("📸 Image", type=["jpg","png","jpeg"])
-    if st.button("🗑️ Reset"):
+
+    if uploaded_file:
+        st.image(uploaded_file, caption="Image chargée", use_column_width=True)
+        st.session_state.send_image = st.checkbox("Envoyer avec le prochain message", value=True)
+
+    if st.button("🗑️ Reset la conversation"):
         st.session_state.messages = []
+        st.session_state.send_image = True
         st.rerun()
 
 # --- HISTORIQUE ---
-for message in st.session_state.messages:
+for i, message in enumerate(st.session_state.messages):
     with st.chat_message(message["role"]):
         st.markdown(f'<div class="chat-text">{message["content"]}</div>', unsafe_allow_html=True)
+        # Bouton TTS uniquement pour les réponses de l'assistant
+        if message["role"] == "assistant":
+            if st.button("🔊 Écouter", key=f"tts_{i}_{hash(message['content'])}"):
+                speak_text(message["content"])
 
 # --- CHAT ---
 if prompt := st.chat_input("Dis quelque chose..."):
-    st.session_state.messages.append({"role":"user","content":prompt})
-
+    # Ajout message user
+    st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(f'<div class="chat-text">{prompt}</div>', unsafe_allow_html=True)
 
+    # Réponse assistant
     with st.chat_message("assistant"):
-
         full_response = ""
         placeholder = st.empty()
-
         loader = st.markdown('<div class="loader"></div>', unsafe_allow_html=True)
 
         try:
-            if uploaded_file:
+            # Construction messages avec historique complet
+            messages = [{"role": "system", "content": SYSTEM_PROMPT}]
+
+            # On ajoute tout l'historique sauf le dernier prompt user qu'on gère à part
+            for m in st.session_state.messages[:-1]:
+                messages.append({"role": m["role"], "content": m["content"]})
+
+            # Gestion image : uniquement si cochée et fichier uploadé
+            use_image = uploaded_file is not None and st.session_state.send_image
+
+            if use_image:
                 model = "meta-llama/llama-4-scout-17b-16e-instruct"
                 img = encode_image(uploaded_file)
-                messages = [
-                    {"role":"system","content":SYSTEM_PROMPT},
-                    {"role":"user","content":[
-                        {"type":"text","text":prompt},
-                        {"type":"image_url","image_url":{"url":f"data:image/jpeg;base64,{img}"}}
-                    ]}
-                ]
+                messages.append({
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": prompt},
+                        {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{img}"}}
+                    ]
+                })
+                # Désactive l'envoi auto pour les prochains tours
+                st.session_state.send_image = False
             else:
                 model = "llama-3.3-70b-versatile"
-                messages = [
-                    {"role":"system","content":SYSTEM_PROMPT},
-                    {"role":"user","content":prompt}
-                ]
+                messages.append({"role": "user", "content": prompt})
 
             completion = client.chat.completions.create(
                 model=model,
@@ -238,10 +269,10 @@ if prompt := st.chat_input("Dis quelque chose..."):
                 unsafe_allow_html=True
             )
 
-            st.session_state.messages.append({"role":"assistant","content":full_response})
-
-            if st.button("🔊 Écouter"):
-                speak_text(full_response)
+            st.session_state.messages.append({"role": "assistant", "content": full_response})
 
         except Exception as e:
+            loader.empty()
             st.error(f"Erreur: {e}")
+
+    st.rerun() # Force le refresh pour afficher le bouton TTS du nouveau message
