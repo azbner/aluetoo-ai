@@ -1,1 +1,9 @@
-print entretien 1-2 semaines désolé modèles recommandés : chat gpt . gemini . meta ai.
+st.warning("⏳ Entretien prévu dans 1 à 2 semaines. Désolé pour l'attente.")
+
+st.markdown("""
+**Modèles recommandés :**
+● ChatGPT
+● Gemini  
+● Meta AI
+● Claude 
+""")
