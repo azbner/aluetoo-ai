@@ -10,7 +10,7 @@ st.set_page_config(
     page_title="ALUETOO AI",
     page_icon="🚀",
     layout="wide",
-    initial_sidebar_state="collapsed" # mieux sur mobile
+    initial_sidebar_state="collapsed"
 )
 
 # --- DESIGN ---
@@ -43,7 +43,7 @@ st.markdown("""
     margin-top: -20px;
 }
 @media (max-width: 768px) {
-   .mega-title { font-size: 40px; margin-top: 0px; }
+  .mega-title { font-size: 40px; margin-top: 0px; }
 }
 
 /* SUB */
@@ -55,7 +55,7 @@ st.markdown("""
     margin-bottom: 40px;
 }
 @media (max-width: 768px) {
-   .sub-mega-title { font-size: 18px; }
+  .sub-mega-title { font-size: 18px; }
 }
 
 /* CHAT */
@@ -99,6 +99,16 @@ div[data-testid="stChatInput"] {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
 }
+
+/* MIC BUTTON */
+.mic-recording {
+    animation: pulse 1.5s infinite;
+}
+@keyframes pulse {
+    0% { box-shadow: 0 0 rgba(255, 75, 75, 0.7); }
+    70% { box-shadow: 0 0 0 10px rgba(255, 75, 75, 0); }
+    100% { box-shadow: 0 0 rgba(255, 75, 75, 0); }
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -114,6 +124,10 @@ if "messages" not in st.session_state:
     st.session_state.messages = []
 if "send_image" not in st.session_state:
     st.session_state.send_image = True
+if "auto_speak" not in st.session_state:
+    st.session_state.auto_speak = True
+if "stt_text" not in st.session_state:
+    st.session_state.stt_text = ""
 
 # --- SYSTEM PROMPT ---
 SYSTEM_PROMPT = """
@@ -165,15 +179,30 @@ Règles obligatoires :
 def encode_image(image_file):
     return base64.b64encode(image_file.getvalue()).decode('utf-8')
 
-def speak_text(text):
-    # json.dumps escape automatiquement les guillemets et caractères spéciaux
-    clean_text = text.replace('\n', ' ')
+def speak_text(text, auto=False):
+    # Nettoie le texte pour une meilleure lecture
+    clean_text = text.replace('●', ', ') # Remplace les puces par une pause
+    clean_text = clean_text.replace('\n', ' ')
+    clean_text = clean_text.replace(' ', ' ') # Double espaces
+
     js_code = f"""
     <script>
     var msg = new SpeechSynthesisUtterance({json.dumps(clean_text)});
     msg.lang = 'fr-FR';
-    window.speechSynthesis.cancel(); // stop si déjà en cours
+    msg.rate = 1.0; // Vitesse normale
+    msg.pitch = 1.0; // Ton normal
+    window.speechSynthesis.cancel();
     speechSynthesis.speak(msg);
+    </script>
+    """
+    if auto:
+        st.components.v1.html(js_code, height=0)
+    return js_code
+
+def stop_speech():
+    js_code = """
+    <script>
+    window.speechSynthesis.cancel();
     </script>
     """
     st.components.v1.html(js_code, height=0)
@@ -194,22 +223,86 @@ with st.sidebar:
         st.image(uploaded_file, caption="Image chargée", use_column_width=True)
         st.session_state.send_image = st.checkbox("Envoyer avec le prochain message", value=True)
 
-    if st.button("🗑️ Reset la conversation"):
-        st.session_state.messages = []
-        st.session_state.send_image = True
-        st.rerun()
+    st.session_state.auto_speak = st.checkbox("🔊 Lecture auto des réponses", value=True)
+
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("🔇 Stop voix"):
+            stop_speech()
+    with col2:
+        if st.button("🗑️ Reset"):
+            st.session_state.messages = []
+            st.session_state.send_image = True
+            stop_speech()
+            st.rerun()
+
+# --- STT : Speech to Text ---
+st.markdown("### 🎙️ Dictée vocale")
+stt_js = """
+<script>
+function startDictation() {
+    if (window.hasOwnProperty('webkitSpeechRecognition')) {
+        var recognition = new webkitSpeechRecognition();
+        recognition.continuous = false;
+        recognition.interimResults = false;
+        recognition.lang = 'fr-FR';
+
+        recognition.start();
+        document.getElementById('mic-btn').innerHTML = '🔴 Écoute...';
+        document.getElementById('mic-btn').classList.add('mic-recording');
+
+        recognition.onresult = function(e) {
+            var transcript = e.results[0][0].transcript;
+            // Envoie le texte à Streamlit via un input caché
+            const streamlitDoc = window.parent.document;
+            const textInput = streamlitDoc.querySelector('input[data-testid="stChatInput"]');
+            if (textInput) {
+                textInput.value = transcript;
+                textInput.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+            document.getElementById('mic-btn').innerHTML = '🎙️ Parler';
+            document.getElementById('mic-btn').classList.remove('mic-recording');
+        };
+
+        recognition.onerror = function(e) {
+            console.log('Erreur STT:', e.error);
+            document.getElementById('mic-btn').innerHTML = '🎙️ Parler';
+            document.getElementById('mic-btn').classList.remove('mic-recording');
+        };
+
+        recognition.onend = function() {
+            document.getElementById('mic-btn').innerHTML = '🎙️ Parler';
+            document.getElementById('mic-btn').classList.remove('mic-recording');
+        };
+    } else {
+        alert('La reconnaissance vocale n\'est pas supportée sur ce navigateur. Utilise Chrome.');
+    }
+}
+</script>
+<button id="mic-btn" onclick="startDictation()" style="
+    width: 100%;
+    padding: 10px;
+    border-radius: 15px;
+    background: linear-gradient(45deg, #ff4b4b, #af40ff);
+    color: white;
+    border: none;
+    font-size: 16px;
+    cursor: pointer;
+    margin-bottom: 20px;
+">🎙️ Parler</button>
+"""
+st.components.v1.html(stt_js, height=60)
 
 # --- HISTORIQUE ---
 for i, message in enumerate(st.session_state.messages):
     with st.chat_message(message["role"]):
         st.markdown(f'<div class="chat-text">{message["content"]}</div>', unsafe_allow_html=True)
-        # Bouton TTS uniquement pour les réponses de l'assistant
         if message["role"] == "assistant":
             if st.button("🔊 Écouter", key=f"tts_{i}_{hash(message['content'])}"):
-                speak_text(message["content"])
+                st.components.v1.html(speak_text(message["content"]), height=0)
 
 # --- CHAT ---
-if prompt := st.chat_input("Dis quelque chose..."):
+if prompt := st.chat_input("Dis quelque chose ou utilise 🎙️ Parler..."):
     # Ajout message user
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
@@ -222,14 +315,10 @@ if prompt := st.chat_input("Dis quelque chose..."):
         loader = st.markdown('<div class="loader"></div>', unsafe_allow_html=True)
 
         try:
-            # Construction messages avec historique complet
             messages = [{"role": "system", "content": SYSTEM_PROMPT}]
-
-            # On ajoute tout l'historique sauf le dernier prompt user qu'on gère à part
             for m in st.session_state.messages[:-1]:
                 messages.append({"role": m["role"], "content": m["content"]})
 
-            # Gestion image : uniquement si cochée et fichier uploadé
             use_image = uploaded_file is not None and st.session_state.send_image
 
             if use_image:
@@ -242,7 +331,6 @@ if prompt := st.chat_input("Dis quelque chose..."):
                         {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{img}"}}
                     ]
                 })
-                # Désactive l'envoi auto pour les prochains tours
                 st.session_state.send_image = False
             else:
                 model = "llama-3.3-70b-versatile"
@@ -271,8 +359,12 @@ if prompt := st.chat_input("Dis quelque chose..."):
 
             st.session_state.messages.append({"role": "assistant", "content": full_response})
 
+            # Auto-lecture si activée
+            if st.session_state.auto_speak:
+                st.components.v1.html(speak_text(full_response, auto=True), height=0)
+
         except Exception as e:
             loader.empty()
             st.error(f"Erreur: {e}")
 
-    st.rerun() # Force le refresh pour afficher le bouton TTS du nouveau message
+    st.rerun()
