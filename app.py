@@ -4,132 +4,308 @@ from groq import Groq
 from datetime import datetime
 import pytz
 import base64
+import re
 
-# --- CONFIGURATION ---
+# ============================================================================
+# CONFIGURATION DE BASE
+# ============================================================================
 st.set_page_config(
     page_title="ALUETOO AI",
-    page_icon="🚀",
+    page_icon="✨",
     layout="wide",
     initial_sidebar_state="collapsed"
 )
 
-# --- DESIGN ---
+# ============================================================================
+# DESIGN APPLE PREMIUM - 120 LIGNES DE CSS
+# ============================================================================
 st.markdown("""
 <style>
-/* GLOBAL */
-.stApp {
-    background: radial-gradient(circle at top, #0b0e14, #05070a);
-    animation: fadePage 0.8s ease-in;
-}
-@keyframes fadePage {
-    from { opacity: 0; }
-    to { opacity: 1; }
+/* --- IMPORT POLICE APPLE --- */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+* {
+    font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'SF Pro Display', sans-serif;
+    -webkit-font-smoothing: antialiased;
 }
 
-/* TITRE */
-@keyframes gradientMove {
-    0% { background-position: 0% }
-    100% { background-position: 200% }
+/* --- FOND GLOBAL --- */
+.stApp {
+    background: #000000;
+    background-image:
+        radial-gradient(circle at 20% 30%, rgba(175, 82, 222, 0.15) 0%, transparent 50%),
+        radial-gradient(circle at 80% 70%, rgba(10, 132, 255, 0.15) 0%, transparent 50%),
+        radial-gradient(circle at 40% 80%, rgba(255, 59, 48, 0.1) 0%, transparent 50%);
+    color: #f5f5f7;
+    min-height: 100vh;
 }
+
+/* --- CACHE ELEMENTS STREAMLIT --- */
+#MainMenu, footer, header, [data-testid="stToolbar"] {
+    display: none!important;
+}
+
+/* --- TITRE PRINCIPAL AVEC GRADIENT ANIMÉ --- */
+@keyframes gradientShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
 .mega-title {
-    font-weight: 900;
-    background: linear-gradient(270deg, #ff4b4b, #af40ff, #00d4ff, #ff4b4b);
-    background-size: 400% 400%;
-    animation: gradientMove 6s linear infinite;
+    font-size: 56px;
+    font-weight: 700;
+    text-align: center;
+    margin: 30px 0 8px 0;
+    letter-spacing: -2px;
+    background: linear-gradient(
+        90deg,
+        #ff3b30 0%,
+        #ff9500 20%,
+        #af52de 40%,
+        #0a84ff 60%,
+        #30d158 80%,
+        #ff3b30 100%
+    );
+    background-size: 300% 100%;
+    animation: gradientShift 8s ease-in-out infinite;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
-    font-size: 65px;
-    text-align: center;
-    margin-top: -20px;
-}
-@media (max-width: 768px) {
-  .mega-title { font-size: 40px; margin-top: 0px; }
+    background-clip: text;
+    filter: drop-shadow(0 0 30px rgba(175, 82, 222, 0.3));
 }
 
-/* SUB */
 .sub-mega-title {
-    font-weight: 700;
-    color: #e6edf3;
-    font-size: 24px;
     text-align: center;
-    margin-bottom: 40px;
-}
-@media (max-width: 768px) {
-  .sub-mega-title { font-size: 18px; }
-}
-
-/* CHAT */
-.chat-text {
-    font-size: 19px!important;
-    color: #e6edf3;
-    line-height: 1.6;
+    color: #86868b;
+    font-size: 15px;
+    font-weight: 400;
+    margin-bottom: 35px;
+    letter-spacing: 0.2px;
 }
 
-/* INPUT */
-div[data-testid="stChatInput"] {
-    border-radius: 30px!important;
-    border: 2px solid #af40ff!important;
-    background-color: #161b22!important;
+/* --- CONTENEUR CHAT --- */
+.chat-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 0 20px 120px 20px;
 }
 
-/* BUTTON */
-.stButton>button {
-    border-radius: 15px;
-    background: linear-gradient(45deg, #af40ff, #00d4ff);
+/* --- BULLES UTILISATEUR (droite) --- */
+.chat-user-wrapper {
+    display: flex;
+    justify-content: flex-end;
+    margin: 12px 0;
+    animation: slideInRight 0.3s ease-out;
+}
+
+.chat-user {
+    background: linear-gradient(135deg, #0a84ff 0%, #5e5ce6 100%);
     color: white;
-    border: none;
-    transition: all 0.3s ease;
-}
-.stButton>button:hover {
-    transform: scale(1.05);
-    box-shadow: 0 0 15px #af40ff;
+    padding: 12px 16px;
+    border-radius: 20px 20px 5px 20px;
+    max-width: 70%;
+    font-size: 16px;
+    line-height: 1.4;
+    box-shadow:
+        0 2px 8px rgba(10, 132, 255, 0.3),
+        0 1px 3px rgba(0, 0, 0, 0.2);
+    word-wrap: break-word;
 }
 
-/* LOADER */
-.loader {
-    border: 4px solid #1f2937;
-    border-top: 4px solid #af40ff;
+/* --- BULLES IA (gauche) --- */
+.chat-ai-wrapper {
+    display: flex;
+    justify-content: flex-start;
+    margin: 12px 0;
+    animation: slideInLeft 0.3s ease-out;
+}
+
+.chat-ai {
+    background: rgba(28, 28, 30, 0.85);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    color: #f5f5f7;
+    padding: 12px 16px;
+    border-radius: 20px 20px 20px 5px;
+    max-width: 70%;
+    font-size: 16px;
+    line-height: 1.5;
+    border: 0.5px solid rgba(255, 255, 255, 0.1);
+    box-shadow:
+        0 2px 12px rgba(0, 0, 0, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    word-wrap: break-word;
+}
+
+@keyframes slideInRight {
+    from { opacity: 0; transform: translateX(20px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slideInLeft {
+    from { opacity: 0; transform: translateX(-20px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+/* --- IMAGE DANS CHAT --- */
+.chat-image {
+    max-width: 280px;
+    border-radius: 14px;
+    margin: 8px 0;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+/* --- BARRE DE SAISIE APPLE --- */
+[data-testid="stChatInput"] {
+    background: rgba(28, 28, 30, 0.9)!important;
+    backdrop-filter: blur(30px) saturate(180%)!important;
+    -webkit-backdrop-filter: blur(30px) saturate(180%)!important;
+    border: 1px solid rgba(255, 255, 255, 0.15)!important;
+    border-radius: 24px!important;
+    height: 48px!important;
+    max-width: 720px!important;
+    margin: 0 auto 25px auto!important;
+    box-shadow:
+        0 8px 32px rgba(0, 0, 0, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05)!important;
+    transition: all 0.3s ease!important;
+}
+
+[data-testid="stChatInput"]:focus-within {
+    border-color: #0a84ff!important;
+    box-shadow:
+        0 8px 32px rgba(0, 0, 0, 0.5),
+        0 0 0 3px rgba(10, 132, 255, 0.2)!important;
+}
+
+[data-testid="stChatInput"] textarea {
+    background: transparent!important;
+    color: #f5f5f7!important;
+    font-size: 16px!important;
+    padding: 12px 90px 12px 18px!important;
+    border: none!important;
+    outline: none!important;
+    resize: none!important;
+    line-height: 1.4!important;
+}
+
+[data-testid="stChatInput"] textarea::placeholder {
+    color: #86868b!important;
+}
+
+/* --- BOUTONS DANS INPUT --- */
+.input-action-btn {
+    position: absolute;
+    width: 34px;
+    height: 34px;
     border-radius: 50%;
-    width: 30px;
-    height: 30px;
-    animation: spin 1s linear infinite;
-    margin: 20px auto;
-}
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+    background: rgba(44, 44, 46, 0.8);
+    border: none;
+    color: #8e8e93;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    transition: all 0.2s ease;
+    z-index: 1000;
+    backdrop-filter: blur(10px);
 }
 
-/* MIC BUTTON */
-.mic-recording {
-    animation: pulse 1.5s infinite;
+.input-action-btn:hover {
+    background: rgba(58, 58, 60, 0.9);
+    color: #f5f5f7;
+    transform: scale(1.05);
 }
-@keyframes pulse {
-    0% { box-shadow: 0 0 rgba(255, 75, 75, 0.7); }
-    70% { box-shadow: 0 0 0 10px rgba(255, 75, 75, 0); }
-    100% { box-shadow: 0 0 rgba(255, 75, 75, 0); }
+
+.mic-btn { right: 52px; bottom: 7px; }
+.attach-btn { right: 12px; bottom: 7px; }
+
+.recording {
+    background: #ff3b30!important;
+    color: white!important;
+    animation: pulse-rec 1.3s ease-in-out infinite;
+}
+
+@keyframes pulse-rec {
+    0%, 100% { transform: scale(1); box-shadow: 0 0 rgba(255, 59, 48, 0.7); }
+    50% { transform: scale(1.08); box-shadow: 0 0 0 8px rgba(255, 59, 48, 0); }
+}
+
+/* --- SIDEBAR APPLE --- */
+[data-testid="stSidebar"] {
+    background: rgba(12, 12, 14, 0.95)!important;
+    backdrop-filter: blur(40px) saturate(180%)!important;
+    border-right: 1px solid rgba(255, 255, 255, 0.08)!important;
+}
+
+/* --- LOADER APPLE --- */
+.apple-loader {
+    width: 24px;
+    height: 24px;
+    border: 2.5px solid rgba(255, 255, 255, 0.15);
+    border-top: 2.5px solid #0a84ff;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 12px 0;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* --- BOUTONS ACTION MESSAGE --- */
+.msg-actions {
+    display: flex;
+    gap: 6px;
+    margin: 6px 0 16px 0;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.chat-ai-wrapper:hover.msg-actions { opacity: 1; }
+
+.msg-btn {
+    background: rgba(44, 44, 46, 0.7);
+    border: 0.5px solid rgba(255, 255, 255, 0.1);
+    color: #8e8e93;
+    font-size: 12px;
+    padding: 5px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s;
+    backdrop-filter: blur(10px);
+}
+
+.msg-btn:hover {
+    background: rgba(58, 58, 60, 0.9);
+    color: #f5f5f7;
 }
 </style>
 """, unsafe_allow_html=True)
 
-# --- API ---
+# ============================================================================
+# INITIALISATION API ET SESSION
+# ============================================================================
 if "GROQ_API_KEY" in st.secrets:
     client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 else:
-    st.error("❌ Erreur technique : clé Groq manquante dans secrets.toml")
+    st.error("❌ Clé Groq manquante")
     st.stop()
 
-# --- STATE INIT ---
+# Initialisation des variables de session
 if "messages" not in st.session_state:
     st.session_state.messages = []
 if "send_image" not in st.session_state:
     st.session_state.send_image = True
 if "auto_speak" not in st.session_state:
     st.session_state.auto_speak = True
-if "stt_text" not in st.session_state:
-    st.session_state.stt_text = ""
+if "uploaded_file" not in st.session_state:
+    st.session_state.uploaded_file = None
 
-# --- SYSTEM PROMPT ---
+# ============================================================================
+# PROMPT SYSTÈME COMPLET
+# ============================================================================
 SYSTEM_PROMPT = """
 Tu es ALUETOO AI, une intelligence artificielle premium créée par Léo Ciach.
 
@@ -175,196 +351,260 @@ Règles obligatoires :
 - et tu ne oublie jamais ce qu'on te dis avant quand tu regarde l'image ou du chat
 """
 
-# --- FONCTIONS ---
+# ============================================================================
+# FONCTIONS UTILITAIRES
+# ============================================================================
 def encode_image(image_file):
+    """Encode une image en base64"""
     return base64.b64encode(image_file.getvalue()).decode('utf-8')
 
-def speak_text(text, auto=False):
-    # Nettoie le texte pour une meilleure lecture
-    clean_text = text.replace('●', ', ') # Remplace les puces par une pause
-    clean_text = clean_text.replace('\n', ' ')
-    clean_text = clean_text.replace(' ', ' ') # Double espaces
+def detect_language(text):
+    """Détecte la langue pour le TTS"""
+    text_lower = text.lower()
+    if re.search(r'[àâäéèêëïîôöùûüÿç]', text_lower):
+        return 'fr-FR'
+    elif re.search(r'[ąćęłńóśźż]', text_lower):
+        return 'pl-PL'
+    elif re.search(r'[áéíóúñü¡¿]', text_lower):
+        return 'es-ES'
+    elif re.search(r'[äöüß]', text_lower):
+        return 'de-DE'
+    elif re.search(r'[あいうえおかきくけこ]', text_lower):
+        return 'ja-JP'
+    else:
+        return 'en-US'
 
-    js_code = f"""
+def speak_text(text):
+    """Synthèse vocale multilingue"""
+    clean = text.replace('●', '. ').replace('\n', ' ')
+    clean = re.sub(r'\s+', ' ', clean).strip()
+    lang = detect_language(clean)
+
+    js = f"""
     <script>
-    var msg = new SpeechSynthesisUtterance({json.dumps(clean_text)});
-    msg.lang = 'fr-FR';
-    msg.rate = 1.0; // Vitesse normale
-    msg.pitch = 1.0; // Ton normal
-    window.speechSynthesis.cancel();
-    speechSynthesis.speak(msg);
+        window.speechSynthesis.cancel();
+        const utter = new SpeechSynthesisUtterance({json.dumps(clean)});
+        utter.lang = '{lang}';
+        utter.rate = 1.0;
+        utter.pitch = 1.0;
+        utter.volume = 1.0;
+        window.speechSynthesis.speak(utter);
     </script>
     """
-    if auto:
-        st.components.v1.html(js_code, height=0)
-    return js_code
+    st.components.v1.html(js, height=0)
 
 def stop_speech():
-    js_code = """
-    <script>
-    window.speechSynthesis.cancel();
-    </script>
-    """
-    st.components.v1.html(js_code, height=0)
+    """Arrête la synthèse vocale"""
+    st.components.v1.html("<script>window.speechSynthesis.cancel();</script>", height=0)
 
-# --- HEADER ---
+# ============================================================================
+# INTERFACE HEADER
+# ============================================================================
 tz = pytz.timezone('Europe/Paris')
 now = datetime.now(tz)
 
 st.markdown('<div class="mega-title">ALUETOO AI</div>', unsafe_allow_html=True)
-st.markdown(f'<div class="sub-mega-title">Créée par Léo Ciach • {now.strftime("%d/%m/%Y %H:%M")}</div>', unsafe_allow_html=True)
+st.markdown(f'<div class="sub-mega-title">Créée par Léo Ciach • {now.strftime("%d/%m/%Y à %H:%M")}</div>', unsafe_allow_html=True)
 
-# --- SIDEBAR ---
+# ============================================================================
+# SIDEBAR
+# ============================================================================
 with st.sidebar:
-    st.markdown("### ⚙️ Paramètres")
-    uploaded_file = st.file_uploader("📸 Image", type=["jpg","png","jpeg"])
+    st.markdown("### ⚙️ Contrôles")
 
-    if uploaded_file:
-        st.image(uploaded_file, caption="Image chargée", use_column_width=True)
-        st.session_state.send_image = st.checkbox("Envoyer avec le prochain message", value=True)
+    uploaded = st.file_uploader("📎 Ajouter une image", type=["jpg", "jpeg", "png", "webp"])
+    if uploaded:
+        st.session_state.uploaded_file = uploaded
+        st.image(uploaded, use_container_width=True)
+        st.session_state.send_image = st.checkbox("Envoyer avec prochain message", value=True)
 
-    st.session_state.auto_speak = st.checkbox("🔊 Lecture auto des réponses", value=True)
+    st.session_state.auto_speak = st.toggle("🔊 Lecture automatique", value=st.session_state.auto_speak)
 
     col1, col2 = st.columns(2)
     with col1:
-        if st.button("🔇 Stop voix"):
+        if st.button("🔇 Stop", use_container_width=True):
             stop_speech()
     with col2:
-        if st.button("🗑️ Reset"):
+        if st.button("🗑️ Nouveau", use_container_width=True):
             st.session_state.messages = []
-            st.session_state.send_image = True
+            st.session_state.uploaded_file = None
             stop_speech()
             st.rerun()
 
-# --- STT : Speech to Text ---
-st.markdown("### 🎙️ Dictée vocale")
-stt_js = """
+# ============================================================================
+# BOUTONS MICRO ET IMAGE INTÉGRÉS
+# ============================================================================
+buttons_js = """
 <script>
-function startDictation() {
-    if (window.hasOwnProperty('webkitSpeechRecognition')) {
-        var recognition = new webkitSpeechRecognition();
-        recognition.continuous = false;
-        recognition.interimResults = false;
-        recognition.lang = 'fr-FR';
+function injectButtons() {
+    const chatInput = window.parent.document.querySelector('[data-testid="stChatInput"]');
+    if (!chatInput || chatInput.querySelector('.mic-btn')) return;
 
-        recognition.start();
-        document.getElementById('mic-btn').innerHTML = '🔴 Écoute...';
-        document.getElementById('mic-btn').classList.add('mic-recording');
+    chatInput.style.position = 'relative';
 
-        recognition.onresult = function(e) {
-            var transcript = e.results[0][0].transcript;
-            // Envoie le texte à Streamlit via un input caché
-            const streamlitDoc = window.parent.document;
-            const textInput = streamlitDoc.querySelector('input[data-testid="stChatInput"]');
-            if (textInput) {
-                textInput.value = transcript;
-                textInput.dispatchEvent(new Event('input', { bubbles: true }));
+    // Bouton Micro
+    const micBtn = document.createElement('button');
+    micBtn.innerHTML = '🎤';
+    micBtn.className = 'input-action-btn mic-btn';
+    micBtn.title = 'Dictée vocale';
+    micBtn.onclick = function() {
+        if (!('webkitSpeechRecognition' in window)) {
+            alert('Utilise Chrome ou Safari');
+            return;
+        }
+        const rec = new webkitSpeechRecognition();
+        rec.lang = navigator.language || 'fr-FR';
+        rec.interimResults = false;
+        rec.maxAlternatives = 1;
+
+        micBtn.classList.add('recording');
+        micBtn.innerHTML = '●';
+        rec.start();
+
+        rec.onresult = function(e) {
+            const transcript = e.results[0][0].transcript;
+            const textarea = window.parent.document.querySelector('[data-testid="stChatInput"] textarea');
+            if (textarea) {
+                textarea.value = transcript;
+                textarea.dispatchEvent(new Event('input', {bubbles: true}));
+                textarea.focus();
             }
-            document.getElementById('mic-btn').innerHTML = '🎙️ Parler';
-            document.getElementById('mic-btn').classList.remove('mic-recording');
         };
 
-        recognition.onerror = function(e) {
-            console.log('Erreur STT:', e.error);
-            document.getElementById('mic-btn').innerHTML = '🎙️ Parler';
-            document.getElementById('mic-btn').classList.remove('mic-recording');
+        rec.onend = function() {
+            micBtn.classList.remove('recording');
+            micBtn.innerHTML = '🎤';
         };
 
-        recognition.onend = function() {
-            document.getElementById('mic-btn').innerHTML = '🎙️ Parler';
-            document.getElementById('mic-btn').classList.remove('mic-recording');
+        rec.onerror = function() {
+            micBtn.classList.remove('recording');
+            micBtn.innerHTML = '🎤';
         };
-    } else {
-        alert('La reconnaissance vocale n\'est pas supportée sur ce navigateur. Utilise Chrome.');
-    }
+    };
+
+    // Bouton Image
+    const imgBtn = document.createElement('button');
+    imgBtn.innerHTML = '📎';
+    imgBtn.className = 'input-action-btn attach-btn';
+    imgBtn.title = 'Joindre une image';
+    imgBtn.onclick = function() {
+        const fileInput = window.parent.document.querySelector('input[type="file"]');
+        if (fileInput) fileInput.click();
+    };
+
+    chatInput.appendChild(micBtn);
+    chatInput.appendChild(imgBtn);
 }
+
+const interval = setInterval(injectButtons, 300);
+setTimeout(() => clearInterval(interval), 10000);
 </script>
-<button id="mic-btn" onclick="startDictation()" style="
-    width: 100%;
-    padding: 10px;
-    border-radius: 15px;
-    background: linear-gradient(45deg, #ff4b4b, #af40ff);
-    color: white;
-    border: none;
-    font-size: 16px;
-    cursor: pointer;
-    margin-bottom: 20px;
-">🎙️ Parler</button>
 """
-st.components.v1.html(stt_js, height=60)
+st.components.v1.html(buttons_js, height=0)
 
-# --- HISTORIQUE ---
-for i, message in enumerate(st.session_state.messages):
-    with st.chat_message(message["role"]):
-        st.markdown(f'<div class="chat-text">{message["content"]}</div>', unsafe_allow_html=True)
-        if message["role"] == "assistant":
-            if st.button("🔊 Écouter", key=f"tts_{i}_{hash(message['content'])}"):
-                st.components.v1.html(speak_text(message["content"]), height=0)
+# ============================================================================
+# AFFICHAGE HISTORIQUE
+# ============================================================================
+st.markdown('<div class="chat-container">', unsafe_allow_html=True)
 
-# --- CHAT ---
-if prompt := st.chat_input("Dis quelque chose ou utilise 🎙️ Parler..."):
-    # Ajout message user
-    st.session_state.messages.append({"role": "user", "content": prompt})
-    with st.chat_message("user"):
-        st.markdown(f'<div class="chat-text">{prompt}</div>', unsafe_allow_html=True)
+for idx, msg in enumerate(st.session_state.messages):
+    if msg["role"] == "user":
+        st.markdown(f'<div class="chat-user-wrapper"><div class="chat-user">{msg["content"]}</div></div>', unsafe_allow_html=True)
+        if msg.get("image"):
+            st.markdown(f'<div class="chat-user-wrapper"><img src="data:image/jpeg;base64,{msg["image"]}" class="chat-image"></div>', unsafe_allow_html=True)
+    else:
+        st.markdown(f'<div class="chat-ai-wrapper"><div class="chat-ai">{msg["content"]}</div></div>', unsafe_allow_html=True)
+        st.markdown(f'''
+            <div class="msg-actions">
+                <button class="msg-btn" onclick="navigator.clipboard.writeText(`{msg['content'].replace('`', "'").replace(chr(10), ' ')}`)">Copier</button>
+                <button class="msg-btn" onclick="speechSynthesis.speak(new SpeechSynthesisUtterance(`{msg['content'].replace('`', "'").replace(chr(10), ' ')}`))">Écouter</button>
+            </div>
+        ''', unsafe_allow_html=True)
 
-    # Réponse assistant
-    with st.chat_message("assistant"):
-        full_response = ""
-        placeholder = st.empty()
-        loader = st.markdown('<div class="loader"></div>', unsafe_allow_html=True)
+st.markdown('</div>', unsafe_allow_html=True)
 
-        try:
-            messages = [{"role": "system", "content": SYSTEM_PROMPT}]
-            for m in st.session_state.messages[:-1]:
-                messages.append({"role": m["role"], "content": m["content"]})
+# ============================================================================
+# GESTION DU CHAT
+# ============================================================================
+if prompt := st.chat_input("Message à ALUETOO..."):
+    # Sauvegarde message utilisateur
+    user_data = {"role": "user", "content": prompt}
+    if st.session_state.uploaded_file and st.session_state.send_image:
+        user_data["image"] = encode_image(st.session_state.uploaded_file)
 
-            use_image = uploaded_file is not None and st.session_state.send_image
+    st.session_state.messages.append(user_data)
 
-            if use_image:
-                model = "meta-llama/llama-4-scout-17b-16e-instruct"
-                img = encode_image(uploaded_file)
-                messages.append({
-                    "role": "user",
-                    "content": [
-                        {"type": "text", "text": prompt},
-                        {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{img}"}}
-                    ]
-                })
-                st.session_state.send_image = False
-            else:
-                model = "llama-3.3-70b-versatile"
-                messages.append({"role": "user", "content": prompt})
+    # Affichage immédiat
+    st.markdown(f'<div class="chat-user-wrapper"><div class="chat-user">{prompt}</div></div>', unsafe_allow_html=True)
+    if user_data.get("image"):
+        st.markdown(f'<div class="chat-user-wrapper"><img src="data:image/jpeg;base64,{user_data["image"]}" class="chat-image"></div>', unsafe_allow_html=True)
 
-            completion = client.chat.completions.create(
-                model=model,
-                messages=messages,
-                stream=True
-            )
+    # Préparation messages pour API
+    api_messages = [{"role": "system", "content": SYSTEM_PROMPT}]
 
-            loader.empty()
+    for m in st.session_state.messages[:-1]:
+        if m["role"] == "user" and m.get("image"):
+            api_messages.append({
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": m["content"]},
+                    {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{m['image']}"}}
+                ]
+            })
+        else:
+            api_messages.append({"role": m["role"], "content": m["content"]})
 
-            for chunk in completion:
-                if chunk.choices[0].delta.content:
-                    full_response += chunk.choices[0].delta.content
-                    placeholder.markdown(
-                        f'<div class="chat-text">{full_response}▌</div>',
-                        unsafe_allow_html=True
-                    )
+    # Ajout du message actuel
+    if user_data.get("image"):
+        api_messages.append({
+            "role": "user",
+            "content": [
+                {"type": "text", "text": prompt},
+                {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{user_data['image']}"}}
+            ]
+        })
+        model = "meta-llama/llama-4-scout-17b-16e-instruct"
+    else:
+        api_messages.append({"role": "user", "content": prompt})
+        model = "llama-3.3-70b-versatile"
 
-            placeholder.markdown(
-                f'<div class="chat-text">{full_response}</div>',
-                unsafe_allow_html=True
-            )
+    # Streaming de la réponse
+    response_placeholder = st.empty()
+    full_response = ""
 
-            st.session_state.messages.append({"role": "assistant", "content": full_response})
+    try:
+        with response_placeholder.container():
+            st.markdown('<div class="chat-ai-wrapper"><div class="chat-ai"><div class="apple-loader"></div></div></div>', unsafe_allow_html=True)
 
-            # Auto-lecture si activée
-            if st.session_state.auto_speak:
-                st.components.v1.html(speak_text(full_response, auto=True), height=0)
+        stream = client.chat.completions.create(
+            model=model,
+            messages=api_messages,
+            stream=True,
+            temperature=0.7,
+            max_tokens=2048
+        )
 
-        except Exception as e:
-            loader.empty()
-            st.error(f"Erreur: {e}")
+        for chunk in stream:
+            if chunk.choices[0].delta.content:
+                full_response += chunk.choices[0].delta.content
+                response_placeholder.markdown(
+                    f'<div class="chat-ai-wrapper"><div class="chat-ai">{full_response}▌</div></div>',
+                    unsafe_allow_html=True
+                )
 
+        response_placeholder.markdown(
+            f'<div class="chat-ai-wrapper"><div class="chat-ai">{full_response}</div></div>',
+            unsafe_allow_html=True
+        )
+
+        st.session_state.messages.append({"role": "assistant", "content": full_response})
+
+        if st.session_state.auto_speak:
+            speak_text(full_response)
+
+    except Exception as e:
+        st.error(f"Erreur: {str(e)}")
+
+    st.session_state.uploaded_file = None
+    st.session_state.send_image = True
     st.rerun()
