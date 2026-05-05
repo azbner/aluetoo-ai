@@ -10,7 +10,7 @@ import time
 # ============================================================================
 # CONFIG APPLE PRO
 # ============================================================================
-st.set_page_config(page_title="ALUETOO AI Pro", page_icon="✨", layout="wide", initial_sidebar_state="expanded")
+st.set_page_config(page_title="ALUETOO AI Pro", page_icon="✨", layout="wide", initial_sidebar_state="collapsed")
 
 st.markdown("""
 <style>
@@ -22,7 +22,7 @@ st.markdown("""
 /* GRADIENT ANIMÉ ALUETOO */
 @keyframes grad { 0%{background-position:0%} 100%{background-position:200%} }
 .title {
-    font-size: 52px; font-weight: 700; text-align: center; margin: 20px 0;
+    font-size: 42px; font-weight: 700; text-align: center; margin: 20px 0 10px 0;
     background: linear-gradient(90deg, #ff3b30, #af52de, #0a84ff, #30d158, #ff3b30);
     background-size: 200%; animation: grad 6s linear infinite;
     -webkit-background-clip: text; -webkit-text-fill-color: transparent;
@@ -38,48 +38,77 @@ st.markdown("""
 .msg-ai {
     background: #1c1c1e; border: 0.5px solid #2c2c2e; color: #f5f5f7;
     padding: 12px 16px; border-radius: 18px 18px 18px 4px;
-    max-width: 75%; margin-right: auto; margin-bottom: 4px; font-size: 15px;
+    max-width: 75%; margin-right: auto; margin-bottom: 8px; font-size: 15px;
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
 }
 
-/* INPUT APPLE GLASSMORPHISM */
+/* INPUT APPLE GLASSMORPHISM - FIX MOBILE */
 [data-testid="stChatInput"] {
-    background: rgba(28, 28, 30, 0.6)!important;
+    background: rgba(28, 28, 30, 0.75)!important;
     backdrop-filter: saturate(180%) blur(20px)!important;
     -webkit-backdrop-filter: saturate(180%) blur(20px)!important;
     border: 0.5px solid rgba(255, 255, 255, 0.15)!important;
-    border-radius: 28px!important;
+    border-radius: 24px!important;
     max-width: 720px!important;
-    margin: 0 auto 20px!important;
+    margin: 0 auto 10px!important;
     box-shadow:
-        0 8px 32px rgba(0, 0, 0, 0.37),
+        0 8px 32px rgba(0, 0, 0, 0.4),
         inset 0 1px 0 rgba(255, 255, 255, 0.1)!important;
-    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)!important;
+    position: fixed!important;
+    bottom: 0!important;
+    left: 0!important;
+    right: 0!important;
+    z-index: 999!important;
 }
 
 [data-testid="stChatInput"]:focus-within {
-    background: rgba(28, 28, 30, 0.8)!important;
+    background: rgba(28, 28, 30, 0.9)!important;
     border: 0.5px solid rgba(10, 132, 255, 0.6)!important;
     box-shadow:
         0 8px 32px rgba(0, 0, 0, 0.5),
-        0 0 0 4px rgba(10, 132, 255, 0.2),
+        0 0 0 3px rgba(10, 132, 255, 0.2),
         inset 0 1px 0 rgba(255, 255, 255, 0.15)!important;
 }
 
+/* FIX HAUTEUR: force 1 ligne au départ */
 [data-testid="stChatInput"] textarea {
     background: transparent!important;
     color: #f5f5f7!important;
-    padding: 14px 100px 14px 20px!important;
-    font-size: 15px!important;
+    padding: 12px 50px 12px 16px!important;
+    font-size: 16px!important;
     font-weight: 400!important;
+    min-height: 24px!important;
+    max-height: 120px!important;
+    height: 24px!important;
+    resize: none!important;
+    line-height: 24px!important;
 }
 
 [data-testid="stChatInput"] textarea::placeholder {
     color: rgba(235, 235, 245, 0.6)!important;
 }
 
-/* BOUTONS INPUT GLASS */
+/* BOUTON ENVOYER NATIVE STREAMLIT */
+[data-testid="stChatInputSubmitButton"] {
+    background: #0a84ff!important;
+    border-radius: 50%!important;
+    right: 8px!important;
+    bottom: 8px!important;
+    width: 32px!important;
+    height: 32px!important;
+    border: none!important;
+}
+
+[data-testid="stChatInputSubmitButton"]:hover {
+    background: #0066cc!important;
+}
+
+[data-testid="stChatInputSubmitButton"] svg {
+    color: white!important;
+}
+
+/* BOUTONS CUSTOM MIC/ATTACH */
 .input-btn {
     position: absolute;
     width: 32px;
@@ -96,19 +125,18 @@ st.markdown("""
     justify-content: center;
     font-size: 15px;
     z-index: 1000;
-    transition: 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+    transition: 0.2s;
 }
 
 .input-btn:hover {
     background: rgba(10, 132, 255, 0.8);
     color: white;
     transform: scale(1.05);
-    border-color: rgba(255, 255, 255, 0.2);
 }
 
-.input-btn:active { transform: scale(0.95); }
-.mic { right: 52px; bottom: 10px; }
-.attach { right: 14px; bottom: 10px; }
+.mic { right: 48px; bottom: 8px; }
+.attach { right: 86px; bottom: 8px; }
+
 .stop-btn {
     background: rgba(255, 59, 48, 0.8)!important;
     color: white!important;
@@ -137,6 +165,11 @@ st.markdown("""
 [data-testid="stFileUploader"] {
     display: none;
 }
+
+/* Padding bas pour pas que le chat passe sous l'input fixed */
+.main.block-container {
+    padding-bottom: 100px!important;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -149,11 +182,10 @@ if "GROQ_API_KEY" not in st.secrets:
 
 client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
-# Session state complet
 defaults = {
     "conversations": {}, "current_id": None, "messages": [],
-    "generating": False, "stop_gen": False, "auto_speak": True,
-    "uploaded": None, "search_query": ""
+    "generating": False, "stop_gen": False, "auto_speak": False,
+    "uploaded": None
 }
 for k, v in defaults.items():
     if k not in st.session_state: st.session_state[k] = v
@@ -181,31 +213,22 @@ def save_current():
             st.session_state.conversations[st.session_state.current_id]["title"] = first
 
 # ============================================================================
-# SIDEBAR - HISTORIQUE ET CONTRÔLES
+# SIDEBAR
 # ============================================================================
 with st.sidebar:
     st.markdown("### ✨ ALUETOO Pro")
-
     if st.button("➕ Nouveau chat", use_container_width=True, type="primary"):
         new_chat()
         st.rerun()
 
-    search = st.text_input("🔍 Rechercher", placeholder="Mots-clés...", label_visibility="collapsed")
-    st.session_state.search_query = search
-
     st.markdown("---")
-
     for cid, conv in sorted(st.session_state.conversations.items(), key=lambda x: x[1]["created"], reverse=True):
         title = conv["title"]
-        if search.lower() in title.lower() or not search:
-            is_active = cid == st.session_state.current_id
-            if st.button(title, key=cid, use_container_width=True, type="secondary" if not is_active else "primary"):
-                st.session_state.current_id = cid
-                st.session_state.messages = conv["messages"].copy()
-                st.rerun()
-
-    st.markdown("---")
-    st.session_state.auto_speak = st.toggle("🔊 Lecture auto", value=st.session_state.auto_speak)
+        is_active = cid == st.session_state.current_id
+        if st.button(title, key=cid, use_container_width=True, type="secondary" if not is_active else "primary"):
+            st.session_state.current_id = cid
+            st.session_state.messages = conv["messages"].copy()
+            st.rerun()
 
 if not st.session_state.current_id:
     new_chat()
@@ -228,10 +251,8 @@ with chat_container:
             if msg.get("image"):
                 st.image(base64.b64decode(msg["image"]), width=250)
         else:
-            st.markdown(f'<div class="msg-ai" id="msg-{idx}">{msg["content"]}</div>', unsafe_allow_html=True)
-
-            # CORRIGÉ: 4 colonnes au lieu de 5, et 4 tailles au lieu de 3
-            col1, col2, col3, col4 = st.columns([1,1,1,1])
+            st.markdown(f'<div class="msg-ai">{msg["content"]}</div>', unsafe_allow_html=True)
+            col1, col2, col3, col4 = st.columns([1,1,1,7])
             with col1:
                 if st.button("📋", key=f"copy{idx}", help="Copier"):
                     st.toast("Copié!")
@@ -243,12 +264,9 @@ with chat_container:
                 if st.button("🔄", key=f"regen{idx}", help="Régénérer"):
                     st.session_state.messages = st.session_state.messages[:idx]
                     st.rerun()
-            with col4:
-                if st.button("👍", key=f"up{idx}", help="Bien"):
-                    st.toast("Feedback enregistré")
 
 # ============================================================================
-# INPUT AVEC BOUTONS
+# BOUTONS MIC/ATTACH
 # ============================================================================
 st.components.v1.html("""
 <script>
@@ -260,7 +278,7 @@ function addButtons() {
     mic.innerHTML = '🎤'; mic.className = 'input-btn mic'; mic.title = 'Dicter';
     mic.onclick = () => {
         const r = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-        r.lang = navigator.language; r.start();
+        r.lang = 'fr-FR'; r.start();
         mic.classList.add('stop-btn'); mic.innerHTML = '⏹';
         r.onresult = e => {
             const ta = window.parent.document.querySelector('textarea');
@@ -283,7 +301,7 @@ setInterval(addButtons, 500);
 </script>
 """, height=0)
 
-uploaded = st.file_uploader("", type=["png","jpg","jpeg","pdf","txt"], label_visibility="collapsed", key="file_uploader")
+uploaded = st.file_uploader("", type=["png","jpg","jpeg","pdf","txt"], label_visibility="collapsed")
 if uploaded:
     st.session_state.uploaded = base64.b64encode(uploaded.read()).decode()
     st.toast(f"Fichier {uploaded.name} prêt")
@@ -320,16 +338,13 @@ if prompt := st.chat_input("Message à ALUETOO..."):
 
     st.session_state.generating = True
     st.session_state.stop_gen = False
-
     placeholder = st.empty()
     full = ""
 
     try:
         stream = client.chat.completions.create(model=model, messages=api_msgs, stream=True, temperature=0.7)
-
         for chunk in stream:
-            if st.session_state.stop_gen:
-                break
+            if st.session_state.stop_gen: break
             if chunk.choices[0].delta.content:
                 full += chunk.choices[0].delta.content
                 status.markdown('<div class="status-bar"><div class="status-dot"></div> Génération en cours...</div>', unsafe_allow_html=True)
@@ -337,13 +352,8 @@ if prompt := st.chat_input("Message à ALUETOO..."):
 
         placeholder.markdown(f'<div class="msg-ai">{full}</div>', unsafe_allow_html=True)
         status.empty()
-
         st.session_state.messages.append({"role": "assistant", "content": full})
         save_current()
-
-        if st.session_state.auto_speak:
-            clean = re.sub(r'●', '. ', full)
-            st.components.v1.html(f"<script>speechSynthesis.speak(new SpeechSynthesisUtterance({json.dumps(clean)}))</script>", height=0)
 
     except Exception as e:
         st.error(f"Erreur: {e}")
