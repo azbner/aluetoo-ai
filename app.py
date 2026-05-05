@@ -28,10 +28,6 @@ st.markdown("""
     -webkit-background-clip: text; -webkit-text-fill-color: transparent;
 }
 
-/* LAYOUT 3 COLONNES APPLE */
-.main-container { display: flex; max-width: 1400px; margin: 0 auto; gap: 20px; padding: 0 20px; }
-.chat-area { flex: 1; max-width: 800px; margin: 0 auto; }
-
 /* BULLES iMESSAGE */
 .msg-user {
     background: linear-gradient(135deg, #0a84ff, #5e5ce6);
@@ -46,17 +42,6 @@ st.markdown("""
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
 }
-
-/* BARRE OUTILS MESSAGE */
-.msg-toolbar {
-    display: flex; gap: 8px; margin: 0 0 16px 0; opacity: 0; transition: 0.2s;
-}
-.msg-ai:hover +.msg-toolbar,.msg-toolbar:hover { opacity: 1; }
-.tool-btn {
-    background: #2c2c2e; border: none; color: #8e8e93; padding: 4px 10px;
-    border-radius: 6px; font-size: 12px; cursor: pointer; transition: 0.15s;
-}
-.tool-btn:hover { background: #3a3a3c; color: white; }
 
 /* INPUT APPLE GLASSMORPHISM */
 [data-testid="stChatInput"] {
@@ -131,20 +116,6 @@ st.markdown("""
 }
 @keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.1)} }
 
-/* SIDEBAR HISTORIQUE */
-.sidebar-history {
-    background: #0c0c0e; border-right: 1px solid #1c1c1e;
-    height: 100vh; overflow-y: auto; padding: 20px;
-}
-.history-item {
-    padding: 10px 12px; margin: 4px 0; border-radius: 8px;
-    background: #1c1c1e; cursor: pointer; font-size: 13px;
-    border: 1px solid transparent; transition: 0.15s;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-.history-item:hover { background: #2c2c2e; border-color: #0a84ff; }
-.history-item.active { background: #0a84ff20; border-color: #0a84ff; }
-
 /* INDICATEUR STATUT */
 .status-bar {
     display: flex; align-items: center; gap: 8px;
@@ -162,20 +133,7 @@ st.markdown("""
 }
 @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
 
-/* CODE BLOCKS */
-pre {
-    background: #0c0c0e!important; border: 1px solid #2c2c2e!important;
-    border-radius: 10px!important; padding: 12px!important; margin: 8px 0!important;
-    overflow-x: auto; position: relative;
-}
-.copy-code {
-    position: absolute; top: 8px; right: 8px;
-    background: #2c2c2e; border: none; color: #8e8e93;
-    padding: 4px 8px; border-radius: 5px; font-size: 11px; cursor: pointer;
-}
-.copy-code:hover { background: #0a84ff; color: white; }
-
-/* FIX: Cache le uploader par défaut */
+/* Cache le uploader par défaut */
 [data-testid="stFileUploader"] {
     display: none;
 }
@@ -232,13 +190,11 @@ with st.sidebar:
         new_chat()
         st.rerun()
 
-    # Recherche historique
     search = st.text_input("🔍 Rechercher", placeholder="Mots-clés...", label_visibility="collapsed")
     st.session_state.search_query = search
 
     st.markdown("---")
 
-    # Liste conversations
     for cid, conv in sorted(st.session_state.conversations.items(), key=lambda x: x[1]["created"], reverse=True):
         title = conv["title"]
         if search.lower() in title.lower() or not search:
@@ -250,9 +206,7 @@ with st.sidebar:
 
     st.markdown("---")
     st.session_state.auto_speak = st.toggle("🔊 Lecture auto", value=st.session_state.auto_speak)
-    st.caption("Raccourcis: ⌘K nouveau, ⌘/ rechercher")
 
-# Init premier chat
 if not st.session_state.current_id:
     new_chat()
 
@@ -274,11 +228,10 @@ with chat_container:
             if msg.get("image"):
                 st.image(base64.b64decode(msg["image"]), width=250)
         else:
-            # Message IA avec toolbar
             st.markdown(f'<div class="msg-ai" id="msg-{idx}">{msg["content"]}</div>', unsafe_allow_html=True)
 
-            # Toolbar
-            col1, col2, col3, col4, col5 = st.columns([1,1,6])
+            # CORRIGÉ: 4 colonnes au lieu de 5, et 4 tailles au lieu de 3
+            col1, col2, col3, col4 = st.columns([1,1,1,1])
             with col1:
                 if st.button("📋", key=f"copy{idx}", help="Copier"):
                     st.toast("Copié!")
@@ -297,7 +250,6 @@ with chat_container:
 # ============================================================================
 # INPUT AVEC BOUTONS
 # ============================================================================
-# Injection JS pour boutons
 st.components.v1.html("""
 <script>
 function addButtons() {
@@ -331,7 +283,6 @@ setInterval(addButtons, 500);
 </script>
 """, height=0)
 
-# Upload caché
 uploaded = st.file_uploader("", type=["png","jpg","jpeg","pdf","txt"], label_visibility="collapsed", key="file_uploader")
 if uploaded:
     st.session_state.uploaded = base64.b64encode(uploaded.read()).decode()
@@ -341,7 +292,6 @@ if uploaded:
 # GESTION PROMPT
 # ============================================================================
 if prompt := st.chat_input("Message à ALUETOO..."):
-    # Ajout message
     user_msg = {"role": "user", "content": prompt}
     if st.session_state.uploaded:
         user_msg["image"] = st.session_state.uploaded
@@ -349,16 +299,13 @@ if prompt := st.chat_input("Message à ALUETOO..."):
     st.session_state.messages.append(user_msg)
     save_current()
 
-    # Affichage user
     st.markdown(f'<div class="msg-user">{prompt}</div>', unsafe_allow_html=True)
     if user_msg.get("image"):
         st.image(base64.b64decode(user_msg["image"]), width=250)
 
-    # Indicateur statut
     status = st.empty()
     status.markdown('<div class="status-bar"><div class="status-dot"></div> ALUETOO réfléchit...</div>', unsafe_allow_html=True)
 
-    # Préparation API
     api_msgs = [{"role": "system", "content": SYSTEM}]
     for m in st.session_state.messages:
         if m.get("image"):
@@ -371,7 +318,6 @@ if prompt := st.chat_input("Message à ALUETOO..."):
 
     model = "meta-llama/llama-4-scout-17b-16e-instruct" if user_msg.get("image") else "llama-3.3-70b-versatile"
 
-    # Génération avec STOP
     st.session_state.generating = True
     st.session_state.stop_gen = False
 
@@ -406,7 +352,6 @@ if prompt := st.chat_input("Message à ALUETOO..."):
         st.session_state.uploaded = None
         st.rerun()
 
-# Bouton STOP si génération
 if st.session_state.generating:
     if st.button("⏹ Arrêter la génération", type="primary"):
         st.session_state.stop_gen = True
