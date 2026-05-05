@@ -7,9 +7,6 @@ import base64
 import re
 import time
 
-# ============================================================================
-# CONFIG APPLE PRO
-# ============================================================================
 st.set_page_config(page_title="ALUETOO AI Pro", page_icon="✨", layout="wide", initial_sidebar_state="collapsed")
 
 st.markdown("""
@@ -22,7 +19,7 @@ st.markdown("""
 /* GRADIENT ANIMÉ ALUETOO */
 @keyframes grad { 0%{background-position:0%} 100%{background-position:200%} }
 .title {
-    font-size: 42px; font-weight: 700; text-align: center; margin: 20px 0 10px 0;
+    font-size: 40px; font-weight: 700; text-align: center; margin: 16px 0 8px 0;
     background: linear-gradient(90deg, #ff3b30, #af52de, #0a84ff, #30d158, #ff3b30);
     background-size: 200%; animation: grad 6s linear infinite;
     -webkit-background-clip: text; -webkit-text-fill-color: transparent;
@@ -31,151 +28,145 @@ st.markdown("""
 /* BULLES iMESSAGE */
 .msg-user {
     background: linear-gradient(135deg, #0a84ff, #5e5ce6);
-    color: white; padding: 12px 16px; border-radius: 18px 18px 4px 18px;
+    color: white; padding: 10px 14px; border-radius: 18px 18px 4px 18px;
     max-width: 75%; margin-left: auto; margin-bottom: 8px; font-size: 15px;
-    box-shadow: 0 2px 8px rgba(10,132,255,0.3);
 }
 .msg-ai {
     background: #1c1c1e; border: 0.5px solid #2c2c2e; color: #f5f5f7;
-    padding: 12px 16px; border-radius: 18px 18px 18px 4px;
+    padding: 10px 14px; border-radius: 18px 18px 18px 4px;
     max-width: 75%; margin-right: auto; margin-bottom: 8px; font-size: 15px;
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
 }
 
-/* INPUT APPLE GLASSMORPHISM - FIX MOBILE */
+/* INPUT APPLE GLASS - FIX DÉFINITIF HAUTEUR */
 [data-testid="stChatInput"] {
-    background: rgba(28, 28, 30, 0.75)!important;
-    backdrop-filter: saturate(180%) blur(20px)!important;
-    -webkit-backdrop-filter: saturate(180%) blur(20px)!important;
-    border: 0.5px solid rgba(255, 255, 255, 0.15)!important;
-    border-radius: 24px!important;
-    max-width: 720px!important;
-    margin: 0 auto 10px!important;
-    box-shadow:
-        0 8px 32px rgba(0, 0, 0, 0.4),
-        inset 0 1px 0 rgba(255, 255, 255, 0.1)!important;
     position: fixed!important;
     bottom: 0!important;
     left: 0!important;
     right: 0!important;
+    background: rgba(28, 28, 30, 0.8)!important;
+    backdrop-filter: saturate(180%) blur(20px)!important;
+    -webkit-backdrop-filter: saturate(180%) blur(20px)!important;
+    border-top: 0.5px solid rgba(255, 255, 255, 0.15)!important;
+    padding: 8px 16px 8px 16px!important;
+    margin: 0!important;
     z-index: 999!important;
 }
 
-[data-testid="stChatInput"]:focus-within {
-    background: rgba(28, 28, 30, 0.9)!important;
+/* Conteneur interne de st.chat_input */
+[data-testid="stChatInput"] > div {
+    background: rgba(44, 44, 46, 0.6)!important;
+    border: 0.5px solid rgba(255, 255, 255, 0.15)!important;
+    border-radius: 20px!important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1)!important;
+    max-height: 120px!important;
+}
+
+[data-testid="stChatInput"]:focus-within > div {
     border: 0.5px solid rgba(10, 132, 255, 0.6)!important;
     box-shadow:
-        0 8px 32px rgba(0, 0, 0, 0.5),
         0 0 0 3px rgba(10, 132, 255, 0.2),
         inset 0 1px 0 rgba(255, 255, 255, 0.15)!important;
 }
 
-/* FIX HAUTEUR: force 1 ligne au départ */
+/* LE FIX: cibler la vraie textarea de baseweb */
 [data-testid="stChatInput"] textarea {
     background: transparent!important;
     color: #f5f5f7!important;
-    padding: 12px 50px 12px 16px!important;
     font-size: 16px!important;
-    font-weight: 400!important;
-    min-height: 24px!important;
-    max-height: 120px!important;
-    height: 24px!important;
+    line-height: 20px!important;
+    padding: 10px 44px 10px 14px!important;
+    min-height: 20px!important;
+    max-height: 100px!important;
+    border: none!important;
     resize: none!important;
-    line-height: 24px!important;
 }
 
 [data-testid="stChatInput"] textarea::placeholder {
-    color: rgba(235, 235, 245, 0.6)!important;
+    color: rgba(235, 235, 245, 0.5)!important;
 }
 
-/* BOUTON ENVOYER NATIVE STREAMLIT */
+/* BOUTON ENVOYER BLEU iOS */
 [data-testid="stChatInputSubmitButton"] {
     background: #0a84ff!important;
     border-radius: 50%!important;
-    right: 8px!important;
-    bottom: 8px!important;
-    width: 32px!important;
-    height: 32px!important;
+    right: 6px!important;
+    bottom: 6px!important;
+    width: 28px!important;
+    height: 28px!important;
+    min-width: 28px!important;
+    min-height: 28px!important;
     border: none!important;
+    transition: 0.2s!important;
 }
 
 [data-testid="stChatInputSubmitButton"]:hover {
     background: #0066cc!important;
+    transform: scale(1.05)!important;
 }
 
 [data-testid="stChatInputSubmitButton"] svg {
+    width: 16px!important;
+    height: 16px!important;
     color: white!important;
 }
 
-/* BOUTONS CUSTOM MIC/ATTACH */
+/* BOUTONS CUSTOM */
 .input-btn {
     position: absolute;
-    width: 32px;
-    height: 32px;
+    width: 28px;
+    height: 28px;
     border-radius: 50%;
-    background: rgba(44, 44, 46, 0.6);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border: 0.5px solid rgba(255, 255, 255, 0.1);
+    background: rgba(60, 60, 62, 0.8);
+    border: none;
     color: #8e8e93;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 15px;
+    font-size: 14px;
     z-index: 1000;
+    bottom: 6px;
     transition: 0.2s;
 }
 
 .input-btn:hover {
     background: rgba(10, 132, 255, 0.8);
     color: white;
-    transform: scale(1.05);
 }
 
-.mic { right: 48px; bottom: 8px; }
-.attach { right: 86px; bottom: 8px; }
+.mic { right: 40px; }
+.attach { right: 72px; }
 
-.stop-btn {
-    background: rgba(255, 59, 48, 0.8)!important;
-    color: white!important;
-    animation: pulse 1s infinite;
-}
-@keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.1)} }
-
-/* INDICATEUR STATUT */
+/* STATUS BAR */
 .status-bar {
     display: flex; align-items: center; gap: 8px;
-    padding: 8px 16px; background: rgba(28, 28, 30, 0.6);
+    padding: 6px 14px; background: rgba(28, 28, 30, 0.8);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     border-radius: 12px;
-    margin: 10px auto; font-size: 13px; color: #8e8e93;
+    margin: 8px auto; font-size: 12px; color: #8e8e93;
     border: 0.5px solid rgba(255, 255, 255, 0.1);
-    max-width: 200px;
+    max-width: 180px;
 }
 .status-dot {
-    width: 8px; height: 8px; border-radius: 50%; background: #30d158;
+    width: 6px; height: 6px; border-radius: 50%; background: #30d158;
     animation: blink 1.5s infinite;
 }
 @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
 
-/* Cache le uploader par défaut */
-[data-testid="stFileUploader"] {
-    display: none;
-}
+/* Cache uploader */
+[data-testid="stFileUploader"] { display: none; }
 
-/* Padding bas pour pas que le chat passe sous l'input fixed */
+/* Padding pour pas que le chat soit sous l'input */
 .main.block-container {
-    padding-bottom: 100px!important;
+    padding-bottom: 80px!important;
+    padding-top: 1rem!important;
 }
 </style>
 """, unsafe_allow_html=True)
 
-# ============================================================================
-# INIT
-# ============================================================================
 if "GROQ_API_KEY" not in st.secrets:
     st.error("Ajoute GROQ_API_KEY dans.streamlit/secrets.toml")
     st.stop()
@@ -184,8 +175,7 @@ client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
 defaults = {
     "conversations": {}, "current_id": None, "messages": [],
-    "generating": False, "stop_gen": False, "auto_speak": False,
-    "uploaded": None
+    "generating": False, "stop_gen": False, "uploaded": None
 }
 for k, v in defaults.items():
     if k not in st.session_state: st.session_state[k] = v
@@ -193,9 +183,6 @@ for k, v in defaults.items():
 SYSTEM = """Tu es ALUETOO AI créée par Léo Ciach. Tu es premium, rapide, éthique.
 - Raisonnement logique, décompose les problèmes
 - Adaptabilité : ajuste selon contexte
-- Transparence : explique ton raisonnement si demandé
-- Neutralité : évite biais, respecte équité
-- Confidentialité : ne stocke rien
 - Utilise ● pour listes
 - Réponds dans la langue de l'utilisateur"""
 
@@ -212,15 +199,11 @@ def save_current():
             first = st.session_state.messages[0]["content"][:40]
             st.session_state.conversations[st.session_state.current_id]["title"] = first
 
-# ============================================================================
-# SIDEBAR
-# ============================================================================
 with st.sidebar:
     st.markdown("### ✨ ALUETOO Pro")
     if st.button("➕ Nouveau chat", use_container_width=True, type="primary"):
         new_chat()
         st.rerun()
-
     st.markdown("---")
     for cid, conv in sorted(st.session_state.conversations.items(), key=lambda x: x[1]["created"], reverse=True):
         title = conv["title"]
@@ -233,15 +216,9 @@ with st.sidebar:
 if not st.session_state.current_id:
     new_chat()
 
-# ============================================================================
-# HEADER
-# ============================================================================
 st.markdown('<div class="title">ALUETOO AI</div>', unsafe_allow_html=True)
-st.markdown(f'<div style="text-align:center;color:#86868b;font-size:13px;margin-bottom:25px;">Fondations: Compute • Données • Algorithmes • Éthique • {datetime.now(pytz.timezone("Europe/Paris")).strftime("%H:%M")}</div>', unsafe_allow_html=True)
+st.markdown(f'<div style="text-align:center;color:#86868b;font-size:13px;margin-bottom:20px;">Fondations: Compute • Données • Algorithmes • Éthique • {datetime.now(pytz.timezone("Europe/Paris")).strftime("%H:%M")}</div>', unsafe_allow_html=True)
 
-# ============================================================================
-# ZONE CHAT
-# ============================================================================
 chat_container = st.container()
 
 with chat_container:
@@ -252,44 +229,43 @@ with chat_container:
                 st.image(base64.b64decode(msg["image"]), width=250)
         else:
             st.markdown(f'<div class="msg-ai">{msg["content"]}</div>', unsafe_allow_html=True)
-            col1, col2, col3, col4 = st.columns([1,1,1,7])
+            col1, col2, col3 = st.columns([1,1,8])
             with col1:
                 if st.button("📋", key=f"copy{idx}", help="Copier"):
                     st.toast("Copié!")
             with col2:
-                if st.button("🔊", key=f"speak{idx}", help="Lire"):
-                    clean = re.sub(r'●', '. ', msg["content"])
-                    st.components.v1.html(f"<script>speechSynthesis.speak(new SpeechSynthesisUtterance({json.dumps(clean)}))</script>", height=0)
-            with col3:
                 if st.button("🔄", key=f"regen{idx}", help="Régénérer"):
                     st.session_state.messages = st.session_state.messages[:idx]
                     st.rerun()
 
-# ============================================================================
-# BOUTONS MIC/ATTACH
-# ============================================================================
+# JS: force rows=1 + ajoute boutons
 st.components.v1.html("""
 <script>
-function addButtons() {
+function fixInput() {
     const input = window.parent.document.querySelector('[data-testid="stChatInput"]');
-    if (!input || input.querySelector('.mic')) return;
+    if (!input) return;
+
+    const ta = input.querySelector('textarea');
+    if (ta) {
+        ta.setAttribute('rows', '1');
+        ta.style.height = '20px';
+    }
+
+    if (input.querySelector('.mic')) return;
 
     const mic = document.createElement('button');
-    mic.innerHTML = '🎤'; mic.className = 'input-btn mic'; mic.title = 'Dicter';
+    mic.innerHTML = '🎤'; mic.className = 'input-btn mic';
     mic.onclick = () => {
         const r = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
         r.lang = 'fr-FR'; r.start();
-        mic.classList.add('stop-btn'); mic.innerHTML = '⏹';
         r.onresult = e => {
-            const ta = window.parent.document.querySelector('textarea');
             ta.value = e.results[0][0].transcript;
             ta.dispatchEvent(new Event('input', {bubbles:true}));
         };
-        r.onend = () => { mic.classList.remove('stop-btn'); mic.innerHTML = '🎤'; };
     };
 
     const attach = document.createElement('button');
-    attach.innerHTML = '📎'; attach.className = 'input-btn attach'; attach.title = 'Joindre';
+    attach.innerHTML = '📎'; attach.className = 'input-btn attach';
     attach.onclick = () => {
         const fileInput = window.parent.document.querySelector('input[type=file]');
         if(fileInput) fileInput.click();
@@ -297,7 +273,7 @@ function addButtons() {
 
     input.appendChild(mic); input.appendChild(attach);
 }
-setInterval(addButtons, 500);
+setInterval(fixInput, 300);
 </script>
 """, height=0)
 
@@ -306,9 +282,6 @@ if uploaded:
     st.session_state.uploaded = base64.b64encode(uploaded.read()).decode()
     st.toast(f"Fichier {uploaded.name} prêt")
 
-# ============================================================================
-# GESTION PROMPT
-# ============================================================================
 if prompt := st.chat_input("Message à ALUETOO..."):
     user_msg = {"role": "user", "content": prompt}
     if st.session_state.uploaded:
@@ -337,17 +310,14 @@ if prompt := st.chat_input("Message à ALUETOO..."):
     model = "meta-llama/llama-4-scout-17b-16e-instruct" if user_msg.get("image") else "llama-3.3-70b-versatile"
 
     st.session_state.generating = True
-    st.session_state.stop_gen = False
     placeholder = st.empty()
     full = ""
 
     try:
         stream = client.chat.completions.create(model=model, messages=api_msgs, stream=True, temperature=0.7)
         for chunk in stream:
-            if st.session_state.stop_gen: break
             if chunk.choices[0].delta.content:
                 full += chunk.choices[0].delta.content
-                status.markdown('<div class="status-bar"><div class="status-dot"></div> Génération en cours...</div>', unsafe_allow_html=True)
                 placeholder.markdown(f'<div class="msg-ai">{full}▌</div>', unsafe_allow_html=True)
 
         placeholder.markdown(f'<div class="msg-ai">{full}</div>', unsafe_allow_html=True)
@@ -360,9 +330,4 @@ if prompt := st.chat_input("Message à ALUETOO..."):
     finally:
         st.session_state.generating = False
         st.session_state.uploaded = None
-        st.rerun()
-
-if st.session_state.generating:
-    if st.button("⏹ Arrêter la génération", type="primary"):
-        st.session_state.stop_gen = True
         st.rerun()
