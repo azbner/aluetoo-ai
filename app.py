@@ -11,324 +11,338 @@ import time
 # CONFIG
 # ============================================================================
 st.set_page_config(
-    page_title="ALUETOO AI Pro",
+    page_title="ALUETOO AI",
     page_icon="✦",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="collapsed"
 )
 
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&family=DM+Mono:wght@400;500&display=swap');
 
-/* ── RESET & BASE ── */
+/* ══ RESET ══ */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html, body, .stApp {
-    font-family: 'DM Sans', -apple-system, sans-serif;
+    font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
     -webkit-font-smoothing: antialiased;
-    background: #08080f !important;
-    color: #e8e8f0;
+    background: #07070e !important;
+    color: #e2e2ec;
     min-height: 100vh;
+    overflow-x: hidden;
 }
-#MainMenu, footer, header { display: none !important; }
+#MainMenu, footer, header, .stDeployButton { display: none !important; }
+section[data-testid="stSidebar"] { display: none !important; }
+[data-testid="collapsedControl"] { display: none !important; }
+.main .block-container { padding: 0 !important; max-width: 100% !important; }
 
-/* ── FOND ANIMÉ AVEC ORBES ── */
+/* ══ ORBES FOND ══ */
 .stApp::before {
     content: '';
     position: fixed; inset: 0; z-index: 0; pointer-events: none;
     background:
-        radial-gradient(ellipse 80vw 60vh at 15% 20%, rgba(99,88,255,0.18) 0%, transparent 70%),
-        radial-gradient(ellipse 60vw 50vh at 85% 75%, rgba(20,180,120,0.12) 0%, transparent 70%),
-        radial-gradient(ellipse 50vw 40vh at 50% 10%, rgba(255,60,80,0.08) 0%, transparent 70%);
-    animation: orbs 18s ease-in-out infinite alternate;
+        radial-gradient(ellipse 70vw 55vh at 10% 15%, rgba(88,76,255,0.22) 0%, transparent 65%),
+        radial-gradient(ellipse 55vw 45vh at 88% 80%, rgba(16,185,129,0.13) 0%, transparent 65%),
+        radial-gradient(ellipse 45vw 35vh at 55% 5%,  rgba(239,68,68,0.09) 0%, transparent 65%),
+        radial-gradient(ellipse 60vw 50vh at 30% 90%, rgba(124,58,237,0.10) 0%, transparent 65%);
+    animation: orbs 20s ease-in-out infinite alternate;
 }
 @keyframes orbs {
-    0%   { filter: hue-rotate(0deg) brightness(1); }
-    50%  { filter: hue-rotate(20deg) brightness(1.1); }
-    100% { filter: hue-rotate(-15deg) brightness(0.95); }
+    0%   { filter: hue-rotate(0deg)   brightness(1);    transform: scale(1); }
+    50%  { filter: hue-rotate(15deg)  brightness(1.08); transform: scale(1.03); }
+    100% { filter: hue-rotate(-10deg) brightness(0.96); transform: scale(0.98); }
 }
 
-/* ── VERRE (mixin réutilisable via classe) ── */
-.glass {
-    background: rgba(255,255,255,0.04);
-    backdrop-filter: blur(28px) saturate(180%);
-    -webkit-backdrop-filter: blur(28px) saturate(180%);
-    border: 1px solid rgba(255,255,255,0.09);
-    border-top-color: rgba(255,255,255,0.15);
-    border-left-color: rgba(255,255,255,0.12);
+/* ══ DRAWER SIDEBAR ══ */
+#sidebar-overlay {
+    display: none; position: fixed; inset: 0; z-index: 998;
+    background: rgba(0,0,0,0.5);
+    backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
 }
+#sidebar-overlay.open { display: block; }
+#sidebar-drawer {
+    position: fixed; top: 0; left: -320px; width: 300px; height: 100vh;
+    z-index: 999; transition: left 0.3s cubic-bezier(0.25,0.46,0.45,0.94);
+    background: rgba(10,10,20,0.93);
+    backdrop-filter: blur(40px) saturate(200%); -webkit-backdrop-filter: blur(40px) saturate(200%);
+    border-right: 1px solid rgba(255,255,255,0.07);
+    display: flex; flex-direction: column;
+    padding: 28px 16px 24px; overflow-y: auto;
+}
+#sidebar-drawer.open { left: 0; }
 
-/* ── SIDEBAR ── */
-section[data-testid="stSidebar"] {
-    background: rgba(10,10,20,0.7) !important;
-    backdrop-filter: blur(40px) saturate(200%) !important;
-    -webkit-backdrop-filter: blur(40px) saturate(200%) !important;
-    border-right: 1px solid rgba(255,255,255,0.07) !important;
-    z-index: 100;
-}
-section[data-testid="stSidebar"] > div { padding: 0 !important; }
-
-/* ── SIDEBAR INNER ── */
-.sidebar-inner {
-    padding: 28px 18px 20px;
-    display: flex; flex-direction: column; height: 100vh; gap: 10px;
-}
-.sidebar-logo {
-    font-size: 20px; font-weight: 600; letter-spacing: -0.5px;
-    background: linear-gradient(135deg, #a78bfa, #60efff, #a78bfa);
+@keyframes shimmer { 0%{background-position:0%} 100%{background-position:200%} }
+.drawer-logo {
+    font-size: 19px; font-weight: 600; letter-spacing: -0.4px;
+    background: linear-gradient(135deg, #a78bfa, #67e8f9, #a78bfa);
     background-size: 200%;
     -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-    animation: shimmer 4s linear infinite;
-    margin-bottom: 4px;
+    animation: shimmer 5s linear infinite;
+    margin-bottom: 3px;
 }
-@keyframes shimmer { 0%{background-position:0%} 100%{background-position:200%} }
-
-/* ── BOUTONS SIDEBAR ── */
-.stButton > button {
-    background: rgba(255,255,255,0.05) !important;
-    border: 1px solid rgba(255,255,255,0.1) !important;
-    color: rgba(255,255,255,0.8) !important;
-    border-radius: 12px !important;
-    font-size: 13.5px !important;
-    font-family: 'DM Sans', sans-serif !important;
-    font-weight: 400 !important;
-    padding: 8px 14px !important;
-    transition: all 0.2s ease !important;
-    text-align: left !important;
+.drawer-sub { font-size: 10.5px; color: rgba(255,255,255,0.2); margin-bottom: 20px; text-transform: uppercase; letter-spacing: 0.6px; }
+.drawer-new-btn {
+    width: 100%; background: rgba(167,139,250,0.15);
+    border: 1px solid rgba(167,139,250,0.35); border-radius: 12px;
+    color: #c4b5fd; font-family: 'DM Sans',sans-serif; font-size: 13.5px;
+    padding: 9px 14px; cursor: pointer; margin-bottom: 12px;
+    transition: all 0.2s; text-align: left; font-weight: 500;
 }
-.stButton > button:hover {
-    background: rgba(167,139,250,0.15) !important;
-    border-color: rgba(167,139,250,0.4) !important;
-    color: white !important;
-    transform: translateX(2px) !important;
+.drawer-new-btn:hover { background: rgba(167,139,250,0.25); transform: translateX(2px); }
+.drawer-search {
+    width: 100%; background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.08); border-radius: 10px;
+    color: rgba(255,255,255,0.7); font-size: 13px; font-family: 'DM Sans',sans-serif;
+    padding: 8px 12px; margin-bottom: 12px; outline: none; transition: border-color 0.2s;
 }
-[data-testid="baseButton-primary"] > button,
-.stButton > button[kind="primary"] {
-    background: rgba(167,139,250,0.2) !important;
-    border-color: rgba(167,139,250,0.5) !important;
-    color: #c4b5fd !important;
+.drawer-search:focus { border-color: rgba(167,139,250,0.45); }
+.drawer-divider { height:1px; background:rgba(255,255,255,0.06); margin:4px 0 10px; }
+.conv-item {
+    padding: 9px 12px; border-radius: 10px; cursor: pointer;
+    font-size: 13px; color: rgba(255,255,255,0.5);
+    border: 1px solid transparent; margin-bottom: 3px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    transition: all 0.15s;
 }
-
-/* ── INPUT RECHERCHE ── */
-.stTextInput > div > div > input {
-    background: rgba(255,255,255,0.04) !important;
-    border: 1px solid rgba(255,255,255,0.08) !important;
-    border-radius: 10px !important;
-    color: rgba(255,255,255,0.7) !important;
-    font-size: 13px !important;
-    padding: 8px 12px !important;
-    font-family: 'DM Sans', sans-serif !important;
-}
-.stTextInput > div > div > input:focus {
-    border-color: rgba(167,139,250,0.4) !important;
-    box-shadow: 0 0 0 3px rgba(167,139,250,0.1) !important;
+.conv-item:hover { background:rgba(255,255,255,0.05); color:rgba(255,255,255,0.8); }
+.conv-item.active { background:rgba(167,139,250,0.12); border-color:rgba(167,139,250,0.3); color:#c4b5fd; }
+.drawer-footer {
+    margin-top: auto; padding-top: 16px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    font-size: 11px; color: rgba(255,255,255,0.18);
+    text-align: center; line-height: 1.8;
 }
 
-/* ── TITRE CENTRAL ── */
-.ai-title {
-    text-align: center;
-    font-size: 46px;
-    font-weight: 600;
-    letter-spacing: -2px;
-    line-height: 1;
-    margin: 30px 0 6px;
-    background: linear-gradient(
-        135deg,
-        rgba(255,255,255,0.95) 0%,
-        rgba(167,139,250,0.9) 35%,
-        rgba(96,239,255,0.85) 65%,
-        rgba(255,255,255,0.95) 100%
-    );
-    background-size: 200%;
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    animation: shimmer 6s linear infinite;
+/* ══ TOPBAR ══ */
+.topbar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100; height: 52px;
+    background: rgba(7,7,14,0.8);
+    backdrop-filter: blur(30px) saturate(180%); -webkit-backdrop-filter: blur(30px) saturate(180%);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    display: flex; align-items: center; justify-content: space-between; padding: 0 20px;
 }
-.ai-sub {
-    text-align: center;
-    font-size: 13px;
-    color: rgba(255,255,255,0.28);
-    letter-spacing: 0.3px;
-    margin-bottom: 28px;
+.topbar-left { display:flex; align-items:center; gap:12px; }
+.menu-btn {
+    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.09);
+    border-radius: 9px; color: rgba(255,255,255,0.6);
+    width:34px; height:34px; cursor:pointer; font-size:15px;
+    display:flex; align-items:center; justify-content:center; transition: all 0.2s;
 }
+.menu-btn:hover { background:rgba(167,139,250,0.15); color:#c4b5fd; }
+.topbar-title {
+    font-size:15px; font-weight:600; letter-spacing:-0.3px;
+    background: linear-gradient(135deg, #a78bfa, #67e8f9);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.status-badge {
+    display:flex; align-items:center; gap:5px;
+    background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.07);
+    border-radius:20px; padding:4px 10px; font-size:11.5px; color:rgba(255,255,255,0.3);
+}
+.status-dot-green {
+    width:6px; height:6px; border-radius:50%; background:#30d158;
+    box-shadow:0 0 5px #30d158; animation: blink 2s ease-in-out infinite;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
 
-/* ── BULLES CHAT ── */
-.msg-row-user {
-    display: flex; justify-content: flex-end;
-    margin: 6px 0 2px; padding: 0 8px;
+/* ══ LAYOUT PRINCIPAL ══ */
+.main-wrap { max-width:760px; margin:0 auto; padding:62px 16px 170px; position:relative; z-index:1; }
+
+/* ══ HERO ══ */
+.hero { text-align:center; padding:60px 0 36px; }
+.hero-title {
+    font-size: clamp(36px,8vw,58px);
+    font-weight:600; letter-spacing:-2.5px; line-height:1;
+    background: linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(167,139,250,0.9) 30%, rgba(96,239,255,0.85) 60%, rgba(255,255,255,0.9) 100%);
+    background-size:200%;
+    -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+    animation: shimmer 7s linear infinite; margin-bottom:10px;
 }
-.msg-row-ai {
-    display: flex; justify-content: flex-start;
-    margin: 6px 0 0; padding: 0 8px;
+.hero-sub { font-size:14px; color:rgba(255,255,255,0.22); letter-spacing:0.2px; line-height:1.7; }
+.hero-author { font-size:11px; color:rgba(255,255,255,0.13); margin-top:5px; font-style:italic; }
+.suggestions { display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin-top:32px; }
+.sug-chip {
+    background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.09);
+    border-top-color:rgba(255,255,255,0.14); border-radius:20px; padding:8px 16px;
+    font-size:13px; color:rgba(255,255,255,0.42); cursor:pointer; transition:all 0.2s;
+    backdrop-filter:blur(12px);
 }
+.sug-chip:hover { background:rgba(167,139,250,0.12); border-color:rgba(167,139,250,0.35); color:rgba(255,255,255,0.8); transform:translateY(-1px); }
+
+/* ══ BULLES ══ */
+.msg-row-user { display:flex; justify-content:flex-end; margin:8px 0 2px; }
+.msg-row-ai   { display:flex; justify-content:flex-start;  margin:8px 0 0; }
 .bubble-user {
-    max-width: 68%;
-    background: linear-gradient(135deg, rgba(99,88,255,0.85), rgba(124,58,237,0.75));
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(167,139,250,0.3);
-    border-top-color: rgba(200,180,255,0.5);
-    color: rgba(255,255,255,0.95);
-    padding: 11px 15px;
-    border-radius: 18px 18px 4px 18px;
-    font-size: 14.5px;
-    line-height: 1.55;
-    box-shadow: 0 4px 20px rgba(99,88,255,0.25), 0 0 0 0.5px rgba(255,255,255,0.05) inset;
+    max-width:72%;
+    background: linear-gradient(135deg, rgba(88,76,255,0.8), rgba(124,58,237,0.7));
+    backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px);
+    border:1px solid rgba(167,139,250,0.25); border-top-color:rgba(200,180,255,0.45);
+    color:rgba(255,255,255,0.93); padding:11px 15px;
+    border-radius:18px 18px 4px 18px; font-size:14.5px; line-height:1.58;
+    box-shadow:0 4px 20px rgba(88,76,255,0.2); word-break:break-word;
 }
 .bubble-ai {
-    max-width: 72%;
-    background: rgba(255,255,255,0.04);
-    backdrop-filter: blur(28px) saturate(180%);
-    -webkit-backdrop-filter: blur(28px) saturate(180%);
-    border: 1px solid rgba(255,255,255,0.09);
-    border-top-color: rgba(255,255,255,0.16);
-    border-left-color: rgba(255,255,255,0.12);
-    color: rgba(235,235,245,0.92);
-    padding: 11px 15px;
-    border-radius: 18px 18px 18px 4px;
-    font-size: 14.5px;
-    line-height: 1.6;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.3), 0 0 0 0.5px rgba(255,255,255,0.03) inset;
+    max-width:78%;
+    background:rgba(255,255,255,0.035);
+    backdrop-filter:blur(30px) saturate(180%); -webkit-backdrop-filter:blur(30px) saturate(180%);
+    border:1px solid rgba(255,255,255,0.08); border-top-color:rgba(255,255,255,0.14); border-left-color:rgba(255,255,255,0.11);
+    color:rgba(232,232,240,0.92); padding:12px 15px;
+    border-radius:18px 18px 18px 4px; font-size:14.5px; line-height:1.65;
+    box-shadow:0 8px 32px rgba(0,0,0,0.3); word-break:break-word;
 }
+.bubble-ai code {
+    font-family:'DM Mono',monospace; background:rgba(0,0,0,0.35);
+    border:1px solid rgba(255,255,255,0.08); border-radius:5px; padding:1px 6px; font-size:12.5px;
+}
+pre { background:rgba(0,0,0,0.4)!important; border:1px solid rgba(255,255,255,0.07)!important; border-radius:10px!important; padding:12px 14px!important; margin:8px 0!important; overflow-x:auto; font-family:'DM Mono',monospace!important; font-size:12.5px!important; }
 
-/* ── TOOLBAR ACTIONS ── */
-.toolbar {
-    display: flex; gap: 4px; margin: 2px 8px 12px 8px;
-}
-.toolbar-btn {
-    background: rgba(255,255,255,0.04);
-    border: 1px solid rgba(255,255,255,0.07);
-    color: rgba(255,255,255,0.35);
-    border-radius: 8px;
-    padding: 3px 9px;
-    font-size: 11.5px;
-    cursor: pointer;
-    transition: all 0.15s;
-    backdrop-filter: blur(10px);
-}
-.toolbar-btn:hover {
-    background: rgba(167,139,250,0.12);
-    border-color: rgba(167,139,250,0.3);
-    color: rgba(255,255,255,0.75);
-}
-
-/* ── INDICATEUR STATUT ── */
+/* ══ STATUT ══ */
 .status-pill {
-    display: inline-flex; align-items: center; gap: 8px;
-    background: rgba(255,255,255,0.04);
-    backdrop-filter: blur(20px);
-    border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 20px;
-    padding: 7px 14px;
-    font-size: 12.5px;
-    color: rgba(255,255,255,0.45);
-    margin: 8px 0 8px 8px;
+    display:inline-flex; align-items:center; gap:8px;
+    background:rgba(255,255,255,0.04); backdrop-filter:blur(20px);
+    border:1px solid rgba(255,255,255,0.08); border-radius:20px;
+    padding:7px 14px; font-size:12.5px; color:rgba(255,255,255,0.38); margin:6px 0;
 }
-.status-dot {
-    width: 6px; height: 6px; border-radius: 50%;
-    background: #30d158;
-    box-shadow: 0 0 6px #30d158;
-    animation: pulse-dot 1.4s ease-in-out infinite;
+.thinking-dots span {
+    display:inline-block; width:4px; height:4px; border-radius:50%;
+    background:rgba(167,139,250,0.7); margin:0 1.5px;
+    animation:bounce 1.2s ease-in-out infinite;
 }
-@keyframes pulse-dot {
-    0%,100% { opacity: 1; transform: scale(1); }
-    50% { opacity: 0.4; transform: scale(0.7); }
-}
+.thinking-dots span:nth-child(2){animation-delay:0.2s}
+.thinking-dots span:nth-child(3){animation-delay:0.4s}
+@keyframes bounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-5px)}}
 
-/* ── INPUT CHAT ── */
+/* ══ BARRE INPUT FIXE ══ */
+.input-bar-wrapper {
+    position:fixed; bottom:0; left:0; right:0; z-index:200;
+    padding:10px 16px 22px;
+    background: linear-gradient(to top, rgba(7,7,14,0.99) 55%, transparent);
+}
+.input-bar-inner { max-width:760px; margin:0 auto; }
+.input-glass {
+    background:rgba(255,255,255,0.05);
+    backdrop-filter:blur(40px) saturate(200%); -webkit-backdrop-filter:blur(40px) saturate(200%);
+    border:1px solid rgba(255,255,255,0.11); border-top-color:rgba(255,255,255,0.18);
+    border-radius:22px;
+    box-shadow:0 8px 40px rgba(0,0,0,0.5), 0 0 0 0.5px rgba(255,255,255,0.04) inset;
+    overflow:hidden;
+}
+.img-preview-bar {
+    display:flex; align-items:center; gap:8px; padding:10px 14px 0;
+}
+.img-preview-bar img {
+    width:44px; height:44px; object-fit:cover;
+    border-radius:9px; border:1px solid rgba(255,255,255,0.1);
+}
+.remove-img-btn {
+    background:rgba(255,59,48,0.2); border:1px solid rgba(255,59,48,0.3);
+    border-radius:6px; color:#ff6b60; font-size:11px; padding:3px 7px;
+    cursor:pointer; transition:0.15s; font-family:'DM Sans',sans-serif;
+}
+.remove-img-btn:hover { background:rgba(255,59,48,0.35); }
+
+/* Override Streamlit chat input */
 [data-testid="stChatInput"] {
-    background: rgba(255,255,255,0.04) !important;
-    backdrop-filter: blur(30px) saturate(180%) !important;
-    -webkit-backdrop-filter: blur(30px) saturate(180%) !important;
-    border: 1px solid rgba(255,255,255,0.1) !important;
-    border-top-color: rgba(255,255,255,0.16) !important;
-    border-radius: 20px !important;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.4), 0 0 0 0.5px rgba(255,255,255,0.04) inset !important;
-    max-width: 780px !important;
-    margin: 4px auto 24px !important;
+    background:transparent!important; border:none!important;
+    border-radius:0!important; box-shadow:none!important;
+    padding:0!important; margin:0!important; max-width:100%!important;
+}
+[data-testid="stChatInput"] > div {
+    background:transparent!important; border:none!important;
+    border-radius:0!important; padding:4px 8px!important;
 }
 [data-testid="stChatInput"] textarea {
-    background: transparent !important;
-    color: rgba(255,255,255,0.85) !important;
-    font-family: 'DM Sans', sans-serif !important;
-    font-size: 14.5px !important;
-    padding: 13px 16px !important;
+    background:transparent!important; color:rgba(255,255,255,0.85)!important;
+    font-family:'DM Sans',sans-serif!important; font-size:14.5px!important;
+    padding:10px 52px 10px 14px!important; min-height:44px!important; resize:none!important;
 }
-[data-testid="stChatInput"] textarea::placeholder {
-    color: rgba(255,255,255,0.22) !important;
-}
-
-/* ── CODE BLOCKS ── */
-pre, code {
-    font-family: 'DM Mono', monospace !important;
-    font-size: 13px !important;
-}
-pre {
-    background: rgba(0,0,0,0.4) !important;
-    border: 1px solid rgba(255,255,255,0.08) !important;
-    border-radius: 12px !important;
-    padding: 14px 16px !important;
-    margin: 10px 0 !important;
-    overflow-x: auto;
+[data-testid="stChatInput"] textarea::placeholder { color:rgba(255,255,255,0.2)!important; }
+[data-testid="stChatInput"] button {
+    background:rgba(167,139,250,0.22)!important; border:1px solid rgba(167,139,250,0.4)!important;
+    border-radius:12px!important; margin-right:8px!important;
 }
 
-/* ── TOGGLE ── */
-.stCheckbox > label, .stToggle > label {
-    color: rgba(255,255,255,0.55) !important;
-    font-size: 13px !important;
+/* Boutons d'action sous l'input */
+.bar-actions {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:4px 12px 10px;
 }
-
-/* ── UPLOAD ── */
-.stFileUploader { display: none !important; }
-
-/* ── SCROLLBAR ── */
-::-webkit-scrollbar { width: 5px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb {
-    background: rgba(255,255,255,0.1);
-    border-radius: 3px;
+.bar-left { display:flex; gap:5px; align-items:center; }
+.action-btn {
+    display:flex; align-items:center; gap:5px;
+    background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.08);
+    border-radius:10px; color:rgba(255,255,255,0.38);
+    padding:5px 11px; font-size:13px; cursor:pointer; transition:all 0.2s;
+    font-family:'DM Sans',sans-serif;
 }
-::-webkit-scrollbar-thumb:hover { background: rgba(167,139,250,0.3); }
+.action-btn:hover { background:rgba(167,139,250,0.12); border-color:rgba(167,139,250,0.3); color:rgba(255,255,255,0.75); }
+.action-btn.recording {
+    background:rgba(255,59,48,0.15)!important; border-color:rgba(255,59,48,0.4)!important;
+    color:#ff6b60!important; animation:pulse-rec 1s ease-in-out infinite;
+}
+@keyframes pulse-rec{0%,100%{box-shadow:0 0 0 0 rgba(255,59,48,0.3)}50%{box-shadow:0 0 0 6px rgba(255,59,48,0)}}
+.stop-btn {
+    display:flex; align-items:center; gap:5px;
+    background:rgba(255,59,48,0.15); border:1px solid rgba(255,59,48,0.35);
+    border-radius:10px; color:#ff6b60; padding:5px 12px; font-size:13px;
+    cursor:pointer; font-family:'DM Sans',sans-serif; transition:all 0.15s;
+}
+.stop-btn:hover { background:rgba(255,59,48,0.25); }
+.bar-hint { font-size:11px; color:rgba(255,255,255,0.13); }
 
-/* ── CAPTION / MISC ── */
-.stCaption { color: rgba(255,255,255,0.2) !important; font-size: 11px !important; }
-.stToast { background: rgba(30,30,50,0.9) !important; backdrop-filter: blur(20px) !important; }
+/* Cache upload natif */
+.stFileUploader { display:none!important; }
+[data-testid="stFileUploader"] { display:none!important; }
+
+/* Misc */
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.08);border-radius:2px}
+::-webkit-scrollbar-thumb:hover{background:rgba(167,139,250,0.25)}
 </style>
 """, unsafe_allow_html=True)
 
 # ============================================================================
-# INIT CLIENT
+# INIT
 # ============================================================================
 if "GROQ_API_KEY" not in st.secrets:
-    st.error("⚠️ Clé GROQ_API_KEY manquante dans les secrets.")
+    st.error("⚠️ Clé GROQ_API_KEY manquante dans les secrets Streamlit.")
     st.stop()
 
 client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
-# ── Session state ──
 defaults = {
     "conversations": {}, "current_id": None, "messages": [],
     "generating": False, "stop_gen": False, "auto_speak": False,
-    "uploaded": None, "uploaded_name": None, "search_query": ""
+    "uploaded_b64": None, "uploaded_name": None,
 }
 for k, v in defaults.items():
     if k not in st.session_state:
         st.session_state[k] = v
 
-# ── Prompt système ──
-SYSTEM = """Tu es ALUETOO AI, créée par Léo Ciach. Tu es précise, rapide et bienveillante.
-● Raisonne logiquement, décompose les problèmes complexes étape par étape.
-● Adapte ton ton et ta longueur au contexte de la question.
-● Sois transparente : si tu n'es pas sûre, dis-le clairement.
+SYSTEM = """Tu es ALUETOO AI, une intelligence artificielle créée par Léo Ciach.
+Tu n'es pas créée par Meta, Anthropic, OpenAI ou Google. Tu es ALUETOO AI, point.
+● Raisonne logiquement, décompose les problèmes complexes.
+● Adapte ton ton et ta longueur au contexte.
+● Si tu n'es pas sûre, dis-le clairement.
 ● Reste neutre et équitable.
 ● Utilise ● pour les listes.
 ● Réponds TOUJOURS dans la langue de l'utilisateur."""
+
+SUGGESTIONS = [
+    "✍️ Aide-moi à rédiger un email",
+    "💡 Explique l'IA simplement",
+    "🔧 Débogue mon code",
+    "🌍 Traduis un texte",
+    "📊 Analyse des données",
+    "🎨 Idées créatives",
+]
 
 # ============================================================================
 # HELPERS
 # ============================================================================
 def new_chat():
-    cid = f"chat_{int(time.time())}"
+    cid = f"chat_{int(time.time()*1000)}"
     st.session_state.conversations[cid] = {
         "title": "Nouvelle discussion",
         "messages": [],
@@ -339,86 +353,149 @@ def new_chat():
 
 def save_current():
     cid = st.session_state.current_id
-    if cid and st.session_state.messages:
-        conv = st.session_state.conversations.get(cid)
-        if conv:
-            conv["messages"] = st.session_state.messages.copy()
-            first = st.session_state.messages[0]["content"]
-            conv["title"] = first[:45] + ("…" if len(first) > 45 else "")
+    if not cid: return
+    conv = st.session_state.conversations.get(cid)
+    if not conv: return
+    conv["messages"] = st.session_state.messages.copy()
+    if st.session_state.messages:
+        first = st.session_state.messages[0]["content"]
+        conv["title"] = first[:44] + ("…" if len(first) > 44 else "")
 
 def build_api_messages():
-    api_msgs = [{"role": "system", "content": SYSTEM}]
+    api = [{"role": "system", "content": SYSTEM}]
     for m in st.session_state.messages:
         if m.get("image"):
-            api_msgs.append({
-                "role": "user",
-                "content": [
-                    {"type": "text", "text": m["content"]},
-                    {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{m['image']}"}}
-                ]
-            })
+            api.append({"role": "user", "content": [
+                {"type": "text", "text": m["content"]},
+                {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{m['image']}"}}
+            ]})
         else:
-            api_msgs.append({"role": m["role"], "content": m["content"]})
-    return api_msgs
+            api.append({"role": m["role"], "content": m["content"]})
+    return api
 
-# ============================================================================
-# SIDEBAR
-# ============================================================================
-with st.sidebar:
-    st.markdown("""
-    <div style="padding: 28px 18px 0;">
-        <div class="sidebar-logo">✦ ALUETOO AI</div>
-        <div style="font-size:11px;color:rgba(255,255,255,0.2);margin-bottom:18px;">Pro Edition</div>
-    </div>
-    """, unsafe_allow_html=True)
-
-    col_new, _ = st.columns([3, 1])
-    with col_new:
-        if st.button("＋  Nouveau chat", use_container_width=True, type="primary"):
-            new_chat()
-            st.rerun()
-
-    search = st.text_input("", placeholder="🔍  Rechercher une discussion…", label_visibility="collapsed")
-    st.session_state.search_query = search
-
-    st.markdown('<div style="height:1px;background:rgba(255,255,255,0.06);margin:8px 0 10px;"></div>', unsafe_allow_html=True)
-
-    # Liste conversations
-    sorted_convs = sorted(
-        st.session_state.conversations.items(),
-        key=lambda x: x[1]["created"], reverse=True
+def speak_text(text):
+    clean = re.sub(r'[●#*`]', ' ', text)
+    st.components.v1.html(
+        f"""<script>
+        speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance({json.dumps(clean)});
+        u.lang = navigator.language || 'fr-FR';
+        speechSynthesis.speak(u);
+        </script>""", height=0
     )
-    for cid, conv in sorted_convs:
-        title = conv["title"]
-        if search.lower() in title.lower() or not search:
-            is_active = cid == st.session_state.current_id
-            btn_type = "primary" if is_active else "secondary"
-            if st.button(title, key=f"conv_{cid}", use_container_width=True, type=btn_type):
-                st.session_state.current_id = cid
-                st.session_state.messages = conv["messages"].copy()
-                st.rerun()
 
-    st.markdown('<div style="height:1px;background:rgba(255,255,255,0.06);margin:10px 0;"></div>', unsafe_allow_html=True)
-    st.session_state.auto_speak = st.toggle("🔊  Lecture automatique", value=st.session_state.auto_speak)
-    st.caption("Raccourcis : ⌘K nouveau · ⌘/ rechercher")
-
-# ── Init premier chat si vide ──
 if not st.session_state.current_id:
     new_chat()
 
 # ============================================================================
-# HEADER
+# TOPBAR + DRAWER HTML
 # ============================================================================
 paris_time = datetime.now(pytz.timezone("Europe/Paris")).strftime("%H:%M")
-st.markdown(f'<div class="ai-title">ALUETOO AI</div>', unsafe_allow_html=True)
-st.markdown(
-    f'<div class="ai-sub">Compute · Données · Algorithmes · Éthique &nbsp;·&nbsp; {paris_time}</div>',
-    unsafe_allow_html=True
-)
+
+conv_items_html = ""
+for cid, conv in sorted(st.session_state.conversations.items(), key=lambda x: x[1]["created"], reverse=True):
+    active = "active" if cid == st.session_state.current_id else ""
+    t = conv["title"].replace('"', '&quot;').replace('<', '&lt;').replace('>', '&gt;')
+    conv_items_html += f'<div class="conv-item {active}" onclick="selectConv(\'{cid}\')">{t}</div>\n'
+
+st.markdown(f"""
+<div class="topbar">
+  <div class="topbar-left">
+    <button class="menu-btn" onclick="toggleDrawer()" title="Menu (Ctrl+B)">☰</button>
+    <span class="topbar-title">✦ ALUETOO AI</span>
+  </div>
+  <div>
+    <div class="status-badge">
+      <div class="status-dot-green"></div>
+      <span>En ligne &nbsp;·&nbsp; {paris_time}</span>
+    </div>
+  </div>
+</div>
+
+<div id="sidebar-overlay" onclick="closeDrawer()"></div>
+<div id="sidebar-drawer">
+  <div class="drawer-logo">✦ ALUETOO AI</div>
+  <div class="drawer-sub">Créé par Léo Ciach</div>
+  <button class="drawer-new-btn" onclick="triggerNewChat()">＋&nbsp; Nouvelle discussion</button>
+  <input class="drawer-search" type="text" placeholder="🔍 Rechercher…" oninput="filterConvs(this.value)">
+  <div class="drawer-divider"></div>
+  <div id="conv-list">{conv_items_html}</div>
+  <div class="drawer-footer">
+    ALUETOO AI &nbsp;·&nbsp; Créé par Léo Ciach<br>
+    <span style="opacity:0.5">v2.0 Pro · Powered by Groq</span>
+  </div>
+</div>
+
+<script>
+function toggleDrawer() {{
+    document.getElementById('sidebar-drawer').classList.toggle('open');
+    document.getElementById('sidebar-overlay').classList.toggle('open');
+}}
+function closeDrawer() {{
+    document.getElementById('sidebar-drawer').classList.remove('open');
+    document.getElementById('sidebar-overlay').classList.remove('open');
+}}
+function triggerNewChat() {{
+    closeDrawer();
+    // find hidden new-chat button and click
+    const btns = window.parent.document.querySelectorAll('button');
+    btns.forEach(b => {{ if(b.getAttribute('data-action')==='new-chat') b.click(); }});
+}}
+function selectConv(cid) {{
+    closeDrawer();
+    const inp = window.parent.document.querySelector('[data-conv-select="true"]');
+    if(inp) {{ inp.value = cid; inp.dispatchEvent(new Event('input',{{bubbles:true}})); }}
+}}
+function filterConvs(q) {{
+    document.querySelectorAll('.conv-item').forEach(el => {{
+        el.style.display = el.textContent.toLowerCase().includes(q.toLowerCase()) ? '' : 'none';
+    }});
+}}
+document.addEventListener('keydown', e => {{
+    if((e.ctrlKey||e.metaKey) && e.key==='b') {{ e.preventDefault(); toggleDrawer(); }}
+}});
+</script>
+""", unsafe_allow_html=True)
 
 # ============================================================================
-# ZONE MESSAGES
+# CONTRÔLES CACHÉS
 # ============================================================================
+c1, c2 = st.columns([1, 20])
+with c1:
+    if st.button("＋", key="hidden_new_chat"):
+        new_chat()
+        st.rerun()
+
+# ============================================================================
+# MESSAGES
+# ============================================================================
+st.markdown('<div class="main-wrap">', unsafe_allow_html=True)
+
+if not st.session_state.messages:
+    sug_chips = "".join(
+        f'<div class="sug-chip" onclick="fillInput(\'{s.replace(chr(39), chr(92)+chr(39)}\')">{s}</div>'
+        for s in SUGGESTIONS
+    )
+    st.markdown(f"""
+    <div class="hero">
+      <div class="hero-title">ALUETOO AI</div>
+      <div class="hero-sub">Compute · Données · Algorithmes · Éthique</div>
+      <div class="hero-author">Créé par Léo Ciach</div>
+      <div class="suggestions">{sug_chips}</div>
+    </div>
+    <script>
+    function fillInput(text) {{
+        const ta = window.parent.document.querySelector('[data-testid="stChatInput"] textarea');
+        if(ta) {{
+            const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype,'value').set;
+            nativeInputValueSetter.call(ta, text);
+            ta.dispatchEvent(new Event('input',{{bubbles:true}}));
+            ta.focus();
+        }}
+    }}
+    </script>
+    """, unsafe_allow_html=True)
+
 for idx, msg in enumerate(st.session_state.messages):
     if msg["role"] == "user":
         st.markdown(
@@ -426,7 +503,7 @@ for idx, msg in enumerate(st.session_state.messages):
             unsafe_allow_html=True
         )
         if msg.get("image"):
-            c1, c2, c3 = st.columns([1, 2, 1])
+            c1, c2, c3 = st.columns([2, 3, 2])
             with c2:
                 st.image(base64.b64decode(msg["image"]), use_container_width=True)
     else:
@@ -434,153 +511,205 @@ for idx, msg in enumerate(st.session_state.messages):
             f'<div class="msg-row-ai"><div class="bubble-ai">{msg["content"]}</div></div>',
             unsafe_allow_html=True
         )
-        # Toolbar actions
-        c1, c2, c3, c4, c5 = st.columns([1, 1, 1, 1, 6])
-        with c1:
+        tc1, tc2, tc3, tc4, _ = st.columns([1, 1, 1, 1, 7])
+        with tc1:
             if st.button("📋", key=f"copy_{idx}", help="Copier"):
-                st.toast("✓ Copié dans le presse-papier")
-        with c2:
-            if st.button("🔊", key=f"speak_{idx}", help="Écouter"):
-                clean_text = re.sub(r'●', '.', msg["content"])
-                st.components.v1.html(
-                    f"<script>speechSynthesis.cancel();speechSynthesis.speak(Object.assign(new SpeechSynthesisUtterance({json.dumps(clean_text)}),{{lang:navigator.language}}))</script>",
-                    height=0
-                )
-        with c3:
+                st.toast("✓ Copié !")
+        with tc2:
+            if st.button("🔊", key=f"tts_{idx}", help="Lire"):
+                speak_text(msg["content"])
+        with tc3:
             if st.button("🔄", key=f"regen_{idx}", help="Régénérer"):
-                # Supprime la réponse IA et relance
                 st.session_state.messages = st.session_state.messages[:idx]
                 st.rerun()
-        with c4:
-            if st.button("👍", key=f"like_{idx}", help="Bonne réponse"):
-                st.toast("✓ Merci pour votre retour !")
+        with tc4:
+            if st.button("👍", key=f"like_{idx}", help="Bien"):
+                st.toast("✓ Merci !")
+
+st.markdown('</div>', unsafe_allow_html=True)
 
 # ============================================================================
-# UPLOAD FICHIER (caché visuellement)
+# BARRE DE SAISIE FIXE
 # ============================================================================
-uploaded_file = st.file_uploader(
-    "Joindre",
-    type=["png", "jpg", "jpeg", "gif", "webp"],
-    label_visibility="collapsed",
-    key="file_uploader"
-)
+img_preview = ""
+if st.session_state.uploaded_b64:
+    img_preview = f"""
+    <div class="img-preview-bar">
+      <img src="data:image/jpeg;base64,{st.session_state.uploaded_b64}" alt="preview">
+      <span style="font-size:12px;color:rgba(255,255,255,0.35)">📎 {st.session_state.uploaded_name}</span>
+    </div>"""
+
+stop_btn_html = ""
+if st.session_state.generating:
+    stop_btn_html = '<button class="stop-btn" onclick="clickStop()">⏹ Arrêter</button>'
+
+st.markdown(f"""
+<div class="input-bar-wrapper">
+  <div class="input-bar-inner">
+    <div class="input-glass">
+      {img_preview}
+      <!-- Streamlit chat input monté ici -->
+    </div>
+    <div class="bar-actions">
+      <div class="bar-left">
+        <button class="action-btn" id="mic-btn" onclick="toggleMic()" title="Ctrl+M">
+          🎤 Dicter
+        </button>
+        <button class="action-btn" onclick="triggerFileUpload()" title="Joindre une image">
+          📎 Image
+        </button>
+        {stop_btn_html}
+      </div>
+      <div class="bar-hint">⌘↵ envoyer &nbsp;·&nbsp; Ctrl+B menu</div>
+    </div>
+  </div>
+</div>
+
+<script>
+let recog = null, isRec = false;
+
+function toggleMic() {{
+    const btn = document.getElementById('mic-btn');
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if(!SR) {{ alert('Dictée non supportée. Utilisez Chrome.'); return; }}
+    if(isRec) {{
+        recog && recog.stop(); return;
+    }}
+    recog = new SR();
+    recog.lang = navigator.language || 'fr-FR';
+    recog.continuous = false; recog.interimResults = false;
+    recog.start(); isRec = true;
+    btn.classList.add('recording');
+    btn.textContent = '⏹ Arrêter';
+
+    recog.onresult = e => {{
+        const t = e.results[0][0].transcript;
+        const ta = window.parent.document.querySelector('[data-testid="stChatInput"] textarea');
+        if(ta) {{
+            const setter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype,'value').set;
+            setter.call(ta, (ta.value ? ta.value+' ' : '') + t);
+            ta.dispatchEvent(new Event('input',{{bubbles:true}}));
+        }}
+    }};
+    recog.onerror = recog.onend = () => {{
+        isRec = false;
+        btn.classList.remove('recording');
+        btn.innerHTML = '🎤 Dicter';
+    }};
+}}
+
+function triggerFileUpload() {{
+    const inp = window.parent.document.querySelector('input[type="file"]');
+    if(inp) inp.click();
+    else alert('Cliquez sur Parcourir pour joindre une image.');
+}}
+
+function clickStop() {{
+    const btns = window.parent.document.querySelectorAll('button');
+    btns.forEach(b => {{ if(b.getAttribute('data-action')==='stop-gen') b.click(); }});
+}}
+
+document.addEventListener('keydown', e => {{
+    if((e.ctrlKey||e.metaKey) && e.key==='m') {{ e.preventDefault(); toggleMic(); }}
+}});
+</script>
+""", unsafe_allow_html=True)
+
+# Bouton stop caché
+cs, _ = st.columns([1, 20])
+with cs:
+    if st.button("⏹", key="hidden_stop"):
+        st.session_state.stop_gen = True
+        st.rerun()
+
+# Upload
+uploaded_file = st.file_uploader("", type=["png","jpg","jpeg","gif","webp"], label_visibility="collapsed")
 if uploaded_file:
-    st.session_state.uploaded = base64.b64encode(uploaded_file.read()).decode()
+    st.session_state.uploaded_b64 = base64.b64encode(uploaded_file.read()).decode()
     st.session_state.uploaded_name = uploaded_file.name
+    st.rerun()
 
-# Prévisualisation si image en attente
-if st.session_state.uploaded:
-    c1, c2, c3 = st.columns([1, 2, 1])
-    with c2:
-        st.image(
-            base64.b64decode(st.session_state.uploaded),
-            caption=f"📎 {st.session_state.uploaded_name}",
-            use_container_width=True
-        )
-    if st.button("✕ Retirer l'image"):
-        st.session_state.uploaded = None
+# Retirer image
+if st.session_state.uploaded_b64:
+    if st.button("✕ Retirer l'image", key="remove_img"):
+        st.session_state.uploaded_b64 = None
         st.session_state.uploaded_name = None
         st.rerun()
 
 # ============================================================================
-# BOUTON STOP (si génération en cours)
-# ============================================================================
-if st.session_state.generating:
-    if st.button("⏹  Arrêter", type="primary", use_container_width=False):
-        st.session_state.stop_gen = True
-        st.rerun()
-
-# ============================================================================
-# SAISIE ET GÉNÉRATION
+# INPUT + GÉNÉRATION
 # ============================================================================
 if prompt := st.chat_input("Message à ALUETOO…"):
-    # Ajoute le message utilisateur
     user_msg = {"role": "user", "content": prompt}
-    if st.session_state.uploaded:
-        user_msg["image"] = st.session_state.uploaded
+    if st.session_state.uploaded_b64:
+        user_msg["image"] = st.session_state.uploaded_b64
 
     st.session_state.messages.append(user_msg)
     save_current()
 
-    # Affiche le message utilisateur immédiatement
     st.markdown(
         f'<div class="msg-row-user"><div class="bubble-user">{prompt}</div></div>',
         unsafe_allow_html=True
     )
     if user_msg.get("image"):
-        c1, c2, c3 = st.columns([1, 2, 1])
+        c1, c2, c3 = st.columns([2, 3, 2])
         with c2:
             st.image(base64.b64decode(user_msg["image"]), use_container_width=True)
 
-    # Indicateur
     status_ph = st.empty()
-    status_ph.markdown(
-        '<div class="status-pill"><div class="status-dot"></div> ALUETOO réfléchit…</div>',
-        unsafe_allow_html=True
-    )
+    status_ph.markdown("""
+    <div class="status-pill">
+        <div class="thinking-dots"><span></span><span></span><span></span></div>
+        ALUETOO réfléchit…
+    </div>""", unsafe_allow_html=True)
 
-    # Choix du modèle
     model = (
         "meta-llama/llama-4-scout-17b-16e-instruct"
-        if user_msg.get("image")
-        else "llama-3.3-70b-versatile"
+        if user_msg.get("image") else "llama-3.3-70b-versatile"
     )
 
-    # Génération streaming
     st.session_state.generating = True
     st.session_state.stop_gen = False
     placeholder = st.empty()
-    full_response = ""
+    full = ""
 
     try:
-        api_messages = build_api_messages()
         stream = client.chat.completions.create(
-            model=model,
-            messages=api_messages,
-            stream=True,
-            temperature=0.7,
-            max_tokens=2048
+            model=model, messages=build_api_messages(),
+            stream=True, temperature=0.7, max_tokens=2048
         )
-
         for chunk in stream:
-            if st.session_state.stop_gen:
-                break
+            if st.session_state.stop_gen: break
             delta = chunk.choices[0].delta.content
             if delta:
-                full_response += delta
-                status_ph.markdown(
-                    '<div class="status-pill"><div class="status-dot"></div> Génération…</div>',
-                    unsafe_allow_html=True
-                )
+                full += delta
+                status_ph.markdown("""
+                <div class="status-pill">
+                    <div class="thinking-dots"><span></span><span></span><span></span></div>
+                    Génération…
+                </div>""", unsafe_allow_html=True)
                 placeholder.markdown(
-                    f'<div class="msg-row-ai"><div class="bubble-ai">{full_response}<span style="opacity:0.4">▌</span></div></div>',
+                    f'<div class="msg-row-ai"><div class="bubble-ai">{full}<span style="opacity:0.3">▌</span></div></div>',
                     unsafe_allow_html=True
                 )
 
         placeholder.markdown(
-            f'<div class="msg-row-ai"><div class="bubble-ai">{full_response}</div></div>',
+            f'<div class="msg-row-ai"><div class="bubble-ai">{full}</div></div>',
             unsafe_allow_html=True
         )
         status_ph.empty()
-
-        # Sauvegarde
-        st.session_state.messages.append({"role": "assistant", "content": full_response})
+        st.session_state.messages.append({"role": "assistant", "content": full})
         save_current()
 
-        # Lecture auto
-        if st.session_state.auto_speak and full_response:
-            clean_text = re.sub(r'●', '.', full_response)
-            st.components.v1.html(
-                f"<script>speechSynthesis.cancel();speechSynthesis.speak(Object.assign(new SpeechSynthesisUtterance({json.dumps(clean_text)}),{{lang:navigator.language}}))</script>",
-                height=0
-            )
+        if st.session_state.auto_speak and full:
+            speak_text(full)
 
     except Exception as e:
         status_ph.empty()
         st.error(f"Erreur API : {e}")
     finally:
         st.session_state.generating = False
-        st.session_state.uploaded = None
+        st.session_state.uploaded_b64 = None
         st.session_state.uploaded_name = None
         st.rerun()
 
