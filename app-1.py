@@ -212,13 +212,23 @@ pre { background:rgba(0,0,0,0.4)!important; border:1px solid rgba(255,255,255,0.
 .thinking-dots span:nth-child(3){animation-delay:0.4s}
 @keyframes bounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-5px)}}
 
-/* ══ BARRE INPUT FIXE ══ */
+/* ══ BARRE INPUT FIXE (MOBILE CIBLÉ) ══ */
 .input-bar-wrapper {
-    position:fixed; bottom:0; left:0; right:0; z-index:200;
-    padding:10px 16px 22px;
-    background: linear-gradient(to top, rgba(7,7,14,0.99) 55%, transparent);
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 200;
+    padding-bottom: 20px; /* Plus d'espace pour la barre du tel */
+    background: linear-gradient(to top, #07070e 80%, transparent);
 }
-.input-bar-inner { max-width:760px; margin:0 auto; }
+
+.input-bar-inner {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 0 10px;
+}
+
 .input-glass {
     background:rgba(255,255,255,0.05);
     backdrop-filter:blur(40px) saturate(200%); -webkit-backdrop-filter:blur(40px) saturate(200%);
@@ -227,6 +237,19 @@ pre { background:rgba(0,0,0,0.4)!important; border:1px solid rgba(255,255,255,0.
     box-shadow:0 8px 40px rgba(0,0,0,0.5), 0 0 0 0.5px rgba(255,255,255,0.04) inset;
     overflow:hidden;
 }
+
+/* On réduit la taille des boutons pour que ça rentre sur une ligne */
+.action-btn {
+    display:flex; align-items:center; gap:5px;
+    background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.08);
+    border-radius:10px; color:rgba(255,255,255,0.38);
+    cursor:pointer; transition:all 0.2s;
+    font-family:'DM Sans',sans-serif;
+    padding: 4px 8px !important;
+    font-size: 11px !important;
+}
+.action-btn:hover { background:rgba(167,139,250,0.12); border-color:rgba(167,139,250,0.3); color:rgba(255,255,255,0.75); }
+
 .img-preview-bar {
     display:flex; align-items:center; gap:8px; padding:10px 14px 0;
 }
@@ -268,14 +291,7 @@ pre { background:rgba(0,0,0,0.4)!important; border:1px solid rgba(255,255,255,0.
     padding:4px 12px 10px;
 }
 .bar-left { display:flex; gap:5px; align-items:center; }
-.action-btn {
-    display:flex; align-items:center; gap:5px;
-    background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.08);
-    border-radius:10px; color:rgba(255,255,255,0.38);
-    padding:5px 11px; font-size:13px; cursor:pointer; transition:all 0.2s;
-    font-family:'DM Sans',sans-serif;
-}
-.action-btn:hover { background:rgba(167,139,250,0.12); border-color:rgba(167,139,250,0.3); color:rgba(255,255,255,0.75); }
+
 .action-btn.recording {
     background:rgba(255,59,48,0.15)!important; border-color:rgba(255,59,48,0.4)!important;
     color:#ff6b60!important; animation:pulse-rec 1s ease-in-out infinite;
@@ -538,9 +554,6 @@ st.markdown('</div>', unsafe_allow_html=True)
 # BARRE DE SAISIE FIXE
 # ============================================================================
 
-# On construit le HTML en concatenant des strings simples (pas de f-string)
-# pour eviter tout conflit avec les accolades du CSS/JS
-
 _bar = []
 _bar.append('<div class="input-bar-wrapper">')
 _bar.append('  <div class="input-bar-inner">')
@@ -559,7 +572,7 @@ _bar.append('      <button class="action-btn" onclick="triggerFileUpload()">&#12
 if st.session_state.generating:
     _bar.append('      <button class="stop-btn" onclick="clickStop()">&#9209; Arr&#234;ter</button>')
 _bar.append('    </div>')
-_bar.append('    <div class="bar-hint">&#8984;&#8629; envoyer &nbsp;&middot;&nbsp; Ctrl+B menu</div>')
+_bar.append('    <div class="bar-hint">&#8984;&#8629; envoyer</div>')
 _bar.append('  </div>')
 _bar.append('  </div>')
 _bar.append('</div>')
@@ -597,9 +610,6 @@ function clickStop(){
     if(btns[i].innerText.trim()==='stop'){btns[i].click();break;}
   }
 }
-document.addEventListener('keydown',function(e){
-  if((e.ctrlKey||e.metaKey)&&e.key==='m'){e.preventDefault();toggleMic();}
-});
 </script>""")
 
 st.markdown("\n".join(_bar), unsafe_allow_html=True)
@@ -652,10 +662,7 @@ if prompt := st.chat_input("Message à ALUETOO…"):
         ALUETOO réfléchit…
     </div>""", unsafe_allow_html=True)
 
-    model = (
-        "meta-llama/llama-4-scout-17b-16e-instruct"
-        if user_msg.get("image") else "llama-3.3-70b-versatile"
-    )
+    model = "llama-3.3-70b-versatile"
 
     st.session_state.generating = True
     st.session_state.stop_gen = False
