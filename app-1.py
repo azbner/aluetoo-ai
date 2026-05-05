@@ -537,89 +537,72 @@ st.markdown('</div>', unsafe_allow_html=True)
 # ============================================================================
 # BARRE DE SAISIE FIXE
 # ============================================================================
-img_preview = ""
+
+# On construit le HTML en concatenant des strings simples (pas de f-string)
+# pour eviter tout conflit avec les accolades du CSS/JS
+
+_bar = []
+_bar.append('<div class="input-bar-wrapper">')
+_bar.append('  <div class="input-bar-inner">')
+
 if st.session_state.uploaded_b64:
-    img_preview = f"""
-    <div class="img-preview-bar">
-      <img src="data:image/jpeg;base64,{st.session_state.uploaded_b64}" alt="preview">
-      <span style="font-size:12px;color:rgba(255,255,255,0.35)">📎 {st.session_state.uploaded_name}</span>
-    </div>"""
+    _bar.append('  <div class="img-preview-bar">')
+    _bar.append('    <img src="data:image/jpeg;base64,' + st.session_state.uploaded_b64 + '" alt="preview">')
+    _name = st.session_state.uploaded_name or ""
+    _bar.append('    <span style="font-size:12px;color:rgba(255,255,255,0.35)">&#128206; ' + _name + '</span>')
+    _bar.append('  </div>')
 
-stop_btn_html = ""
+_bar.append('  <div class="bar-actions">')
+_bar.append('    <div class="bar-left">')
+_bar.append('      <button class="action-btn" id="mic-btn" onclick="toggleMic()">&#127908; Dicter</button>')
+_bar.append('      <button class="action-btn" onclick="triggerFileUpload()">&#128206; Image</button>')
 if st.session_state.generating:
-    stop_btn_html = '<button class="stop-btn" onclick="clickStop()">⏹ Arrêter</button>'
+    _bar.append('      <button class="stop-btn" onclick="clickStop()">&#9209; Arr&#234;ter</button>')
+_bar.append('    </div>')
+_bar.append('    <div class="bar-hint">&#8984;&#8629; envoyer &nbsp;&middot;&nbsp; Ctrl+B menu</div>')
+_bar.append('  </div>')
+_bar.append('  </div>')
+_bar.append('</div>')
+_bar.append("""<script>
+var _recog=null,_isRec=false;
+function toggleMic(){
+  var btn=document.getElementById('mic-btn');
+  var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){alert('Dictee non supportee, utilisez Chrome.');return;}
+  if(_isRec){_recog&&_recog.stop();return;}
+  _recog=new SR();_recog.lang=navigator.language||'fr-FR';
+  _recog.continuous=false;_recog.interimResults=false;
+  _recog.start();_isRec=true;
+  btn.classList.add('recording');btn.textContent='Arreter';
+  _recog.onresult=function(e){
+    var t=e.results[0][0].transcript;
+    var ta=window.parent.document.querySelector('[data-testid="stChatInput"] textarea');
+    if(ta){
+      var s=Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype,'value').set;
+      s.call(ta,(ta.value?ta.value+' ':'')+t);
+      ta.dispatchEvent(new Event('input',{bubbles:true}));
+    }
+  };
+  _recog.onerror=_recog.onend=function(){
+    _isRec=false;btn.classList.remove('recording');btn.textContent='Dicter';
+  };
+}
+function triggerFileUpload(){
+  var inp=window.parent.document.querySelector('input[type="file"]');
+  if(inp)inp.click();
+}
+function clickStop(){
+  var btns=window.parent.document.querySelectorAll('button');
+  for(var i=0;i<btns.length;i++){
+    if(btns[i].innerText.trim()==='stop'){btns[i].click();break;}
+  }
+}
+document.addEventListener('keydown',function(e){
+  if((e.ctrlKey||e.metaKey)&&e.key==='m'){e.preventDefault();toggleMic();}
+});
+</script>""")
 
-st.markdown(f"""
-<div class="input-bar-wrapper">
-  <div class="input-bar-inner">
-    <div class="input-glass">
-      {img_preview}
-      <!-- Streamlit chat input monté ici -->
-    </div>
-    <div class="bar-actions">
-      <div class="bar-left">
-        <button class="action-btn" id="mic-btn" onclick="toggleMic()" title="Ctrl+M">
-          🎤 Dicter
-        </button>
-        <button class="action-btn" onclick="triggerFileUpload()" title="Joindre une image">
-          📎 Image
-        </button>
-        {stop_btn_html}
-      </div>
-      <div class="bar-hint">⌘↵ envoyer &nbsp;·&nbsp; Ctrl+B menu</div>
-    </div>
-  </div>
-</div>
-
-<script>
-let recog = null, isRec = false;
-
-function toggleMic() {{
-    const btn = document.getElementById('mic-btn');
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if(!SR) {{ alert('Dictée non supportée. Utilisez Chrome.'); return; }}
-    if(isRec) {{
-        recog && recog.stop(); return;
-    }}
-    recog = new SR();
-    recog.lang = navigator.language || 'fr-FR';
-    recog.continuous = false; recog.interimResults = false;
-    recog.start(); isRec = true;
-    btn.classList.add('recording');
-    btn.textContent = '⏹ Arrêter';
-
-    recog.onresult = e => {{
-        const t = e.results[0][0].transcript;
-        const ta = window.parent.document.querySelector('[data-testid="stChatInput"] textarea');
-        if(ta) {{
-            const setter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype,'value').set;
-            setter.call(ta, (ta.value ? ta.value+' ' : '') + t);
-            ta.dispatchEvent(new Event('input',{{bubbles:true}}));
-        }}
-    }};
-    recog.onerror = recog.onend = () => {{
-        isRec = false;
-        btn.classList.remove('recording');
-        btn.innerHTML = '🎤 Dicter';
-    }};
-}}
-
-function triggerFileUpload() {{
-    const inp = window.parent.document.querySelector('input[type="file"]');
-    if(inp) inp.click();
-    else alert('Cliquez sur Parcourir pour joindre une image.');
-}}
-
-function clickStop() {{
-    const btns = window.parent.document.querySelectorAll('button');
-    btns.forEach(b => {{ if(b.getAttribute('data-action')==='stop-gen') b.click(); }});
-}}
-
-document.addEventListener('keydown', e => {{
-    if((e.ctrlKey||e.metaKey) && e.key==='m') {{ e.preventDefault(); toggleMic(); }}
-}});
-</script>
-""", unsafe_allow_html=True)
+st.markdown("\n".join(_bar), unsafe_allow_html=True)
 
 # Bouton stop caché
 cs, _ = st.columns([1, 20])
@@ -718,3 +701,4 @@ if prompt := st.chat_input("Message à ALUETOO…"):
         st.session_state.uploaded_b64 = None
         st.session_state.uploaded_name = None
         st.rerun()
+
