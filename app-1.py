@@ -221,7 +221,7 @@ with chat_container:
             st.markdown(f'<div class="msg-ai" id="msg-{idx}">{msg["content"]}</div>', unsafe_allow_html=True)
 
             # Toolbar
-            col1, col2, col3, col4, col5 = st.columns([1,1,6])
+            col1, col2, col3 = st.columns([1,1,6])
             with col1:
                 if st.button("📋", key=f"copy{idx}", help="Copier"):
                     st.toast("Copié!")
